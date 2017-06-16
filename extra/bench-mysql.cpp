@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <sstream>
 #include <list>
@@ -85,7 +86,7 @@ extern char *usage;
 extern char *optServerPort;
 
 int main(int argc, char* argv[])
-{  
+{
   argc -= handleOpts(argc, argv);
   if (argc < 2){
     fprintf(stderr, usage, argv[0]);
@@ -97,7 +98,7 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Cannot initialize mysql library\n");
     exit(1);
   }
-  
+
 
   ConfigParser cp(argv[optind]);
   cp.Parse();
@@ -144,4 +145,3 @@ int main(int argc, char* argv[])
 
   return 0;
 }
-

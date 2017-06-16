@@ -52,7 +52,7 @@ bench-redis: bench-redis.o bench.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl -lhiredis -lpthread
 
 bench-mysql: bench-mysql.o bench.a
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl -lmysqlclient_r -lpthread
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl -lmysqlclient -lpthread
 
 bench-mysql.o:
 	$(CXX) $(CXXFLAGS) -I/usr/include/mysql -c -o $@ $<
@@ -67,7 +67,7 @@ bench-dtree: bench-dtree.o bench.a $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a 
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl $(LDLIBS)
 
 bench-wiki-mysql: bench-wiki-mysql.o bench.a
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl -lmysqlclient_r -lpthread
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl -lmysqlclient -lpthread
 
 bench-wiki-mysql.o:
 	$(CXX) $(CXXFLAGS) -I/usr/include/mysql -c -o $@ $<

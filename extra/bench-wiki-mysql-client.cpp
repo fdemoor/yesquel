@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -32,7 +32,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -73,7 +73,7 @@ int CreateWikiMysqlClient(const char* conf_str, const char* confdir, BenchmarkCl
   return (*clp)->Init();
 }
 
-// Stolen from mysql-client.cpp. TODO: copypasta is bad, put this 
+// Stolen from mysql-client.cpp. TODO: copypasta is bad, put this
 // in some common file.
 inline void bind_string(const std::string& to_bind, MYSQL_BIND* bind){
   memset(bind, 0, sizeof(*bind));
@@ -112,22 +112,22 @@ get_ts(const std::string& key, const DatMap& map){
  return ret;
 }
 
-const std::set<std::string> 
+const std::set<std::string>
 WikiMysqlClient::threadSafeGetCategories(const std::string& page_title){
   return get_ts(page_title, _category_map);
 }
 
-const std::set<std::string> 
+const std::set<std::string>
 WikiMysqlClient::threadSafeGetImages(const std::string& page_title){
   return get_ts(page_title, _image_map);
 }
 
-const std::set<std::string> 
+const std::set<std::string>
 WikiMysqlClient::threadSafeGetStubs(const std::string& page_title){
   return get_ts(page_title, _stub_map);
 }
 
-const std::set<std::string> 
+const std::set<std::string>
 WikiMysqlClient::threadSafeGetLinks(const std::string& page_title){
   return get_ts(page_title, _link_map);
 }
@@ -184,15 +184,15 @@ void WikiMysqlClient::load_data(){
   };
 
   std::vector<std::thread> threads;
-  
+
   std::string confpath = _confdir;
   if (!confpath.empty() && confpath.back() != '/') confpath += "/";
-  
+
   std::string catfilename = confpath + "categories.dat";
   std::string linksfilename = confpath + "links.dat";
   std::string stubsfilename = confpath + "stubs.dat";
   std::string imagesfilename = confpath + "images.dat";
-  
+
   threads.push_back(std::thread(std::bind(loader_helper, &_category_map, catfilename.c_str(), true)));
   threads.push_back(std::thread(std::bind(loader_helper, &_link_map, linksfilename.c_str(), false)));
   threads.push_back(std::thread(std::bind(loader_helper, &_stub_map, stubsfilename.c_str(), false)));
@@ -213,9 +213,9 @@ int WikiMysqlClient::Init(){
     std::string dbname = _dbname.substr(pos + 1);
     std::string host = _dbname.substr(0, pos);
     LOG("_dbname %s host %s dbname %s\n", _dbname.c_str(), host.c_str(), dbname.c_str());
-    
+
     _dbconn = mysql_init(nullptr);
-    if (mysql_real_connect(_dbconn, host.c_str(), DBUSER, DBPASSWD, 
+    if (mysql_real_connect(_dbconn, host.c_str(), DBUSER, DBPASSWD,
                            dbname.c_str(), 0, nullptr, 0)){
       ret = 0;
     } else {
@@ -263,14 +263,14 @@ struct MysqlStatementHelper {
       _stmt = mysql_stmt_init(dbconn);
       int rc = mysql_stmt_prepare(_stmt, query_str, (unsigned long) strlen(query_str));
       if (rc){
-        LOG("Error preparing %s %d\n", query_str, rc); 
+        LOG("Error preparing %s %d\n", query_str, rc);
         LOG("extra info: %s\n", mysql_stmt_error(_stmt));
         mysql_stmt_close(_stmt);
         _stmt = nullptr;
       } else {
         clp->setStatement(query_str, _stmt);
       }
-    } 
+    }
     *stmt = _stmt;
   }
 
@@ -281,7 +281,7 @@ struct MysqlStatementHelper {
   MYSQL_STMT* _stmt;
 };
 
-static void init_result_bind(MYSQL_BIND* bind, 
+static void init_result_bind(MYSQL_BIND* bind,
                              unsigned long* item_lengths,
                              size_t sz){
   // this is a hack to figure out if we need to allocate large
@@ -297,7 +297,7 @@ static void init_result_bind(MYSQL_BIND* bind,
   }
 }
 
-static int fetch_result(MYSQL_STMT* stmt, int nCols, const std::set<int>& fetch_cols, 
+static int fetch_result(MYSQL_STMT* stmt, int nCols, const std::set<int>& fetch_cols,
              std::vector<std::string>& cols){
   int rc = -1;
   //long long pgid = 0;
@@ -325,7 +325,7 @@ static int fetch_result(MYSQL_STMT* stmt, int nCols, const std::set<int>& fetch_
              rc = -1;
           }
         }
-      } 
+      }
     } else if (frc != MYSQL_NO_DATA){
       LOG("Unknown error %d from mysql_stmt_fetch()\n", frc);
       rc = -1;
@@ -376,7 +376,7 @@ int WikiMysqlClient::do_query(const char* query_str, int nCols, const std::vecto
   if (rc){LOG("Error fetching %s\n", query_str); return -1;}
   return 0;
 }
-         
+
 #define INIT_QUERY_LOCALS \
   std::set<int> fetch_cols; \
   std::vector<std::string> params; \
@@ -549,7 +549,7 @@ int WikiMysqlClient::database_read(int seed){
     params.push_back(stub);
     QUERY(add_link_obj, 4);
     reset_locals();
-    
+
     params.push_back(stub_rev);
     QUERY(load_text, 2);
     reset_locals();
@@ -566,7 +566,7 @@ int WikiMysqlClient::database_read(int seed){
       params.push_back(stub);
       QUERY(add_link_obj, 4);
       reset_locals();
-    
+
       params.push_back(stub_rev);
       QUERY(load_text, 2);
       reset_locals();
@@ -606,7 +606,7 @@ int WikiMysqlClient::database_read(int seed){
     for (auto i = 0; i < (int)links.size() - 1; ++i){
       links_bind_ss << "?,";
     } links_bind_ss << "?";
- 
+
     std::stringstream stubs_bind_ss;
     for (auto i = 0; i < (int)stubs.size() - 1; ++i){
       stubs_bind_ss << "?,";
@@ -614,7 +614,7 @@ int WikiMysqlClient::database_read(int seed){
 
     snprintf(get_links_query, 4096, get_links, links_bind_ss.str().c_str(),
       stubs_bind_ss.str().c_str());
-    
+
     for (auto& link : links) params.push_back(link);
     for (auto& stub : stubs) params.push_back(stub);
 
@@ -625,7 +625,7 @@ int WikiMysqlClient::database_read(int seed){
   for (auto& i : categories) params.push_back(i);
   QUERY(get_categories_sql.c_str(), 7);
   reset_locals();
-  
+
   params.push_back(ipaddr);
   params.push_back(ipaddr);
   params.push_back(title);
@@ -683,7 +683,7 @@ MYSQL_STMT *WikiMysqlClient::construct_sql_insert(const TableId& table, const Ke
     }
     rc = mysql_stmt_bind_param(ret, bind);
     delete [] bind;
-  } 
+  }
   if (rc != 0){
     LOG( "insert %s failed: %s\n", (prepared) ? "binding" : "preparing",
             mysql_stmt_error(ret));
@@ -718,7 +718,7 @@ int WikiMysqlClient::insert(const TableId& table, const Key& key, const ValueMap
 int WikiMysqlClient::read(const TableId& table, const Key& key, const FieldList& fields,
       ValueMap& result){
   static const char* read_sync = "SELECT FIELD1 FROM synctable WHERE " KEYNAME " = ?";
-  if (table != std::string("synctable")) return -1;  
+  if (table != std::string("synctable")) return -1;
 
   INIT_QUERY_LOCALS;
 

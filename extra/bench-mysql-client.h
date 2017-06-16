@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -34,6 +34,7 @@
 #include <mysql.h>
 
 #include <string>
+#include <unistd.h>
 
 #include "bench-client.h"
 
@@ -46,7 +47,7 @@ public:
   MysqlClient(const std::string& database, bool create=false);
   int Init();
   ~MysqlClient();
-  
+
   int read(const TableId& table, const Key& key, const FieldList& fields,
 	   ValueMap& result);
   int scan(const TableId& table, const Key& start_key, int count,
@@ -60,7 +61,7 @@ public:
   int complete(void);
   int BulkInsert(const TableId& table, const std::vector<Key>& keys,
                          const std::vector<ValueMap>& values);
-    
+
 private:
   // SQL constructors
   MYSQL_STMT *construct_sql_read(const TableId& table, const Key& key, const FieldList& fields);

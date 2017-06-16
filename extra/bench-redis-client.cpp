@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -97,7 +97,7 @@ int RedisClient::Init(){
     portno = std_redis_port;
   }
   printf("Redis connecting to server %s port %d\n", host.c_str(), portno);
-  
+
   _dbconn = redisConnect(host.c_str(), portno);
   return (_dbconn == nullptr) ? 1 : 0;
 }
@@ -120,7 +120,7 @@ int RedisClient::read(const TableId& table, const Key& key, const FieldList& fie
   uint64_t hash = MurmurHash64A(key.c_str(), (int) key.length());
   command_array[idx] = (char*) &hash;
   size_array[idx++] = 8;
-  
+
   for (auto& it : fields){
     command_array[idx] = const_cast<char *>(it.c_str());
     size_array[idx++] = it.length();
@@ -172,7 +172,7 @@ int RedisClient::scan(const TableId& table, const Key& start_key, int count,
   size_array[idx++] = score.length();
   command_array[idx] = const_cast<char*>("+inf"); size_array[idx++] = 4;
   command_array[idx] = const_cast<char*>("LIMIT"); size_array[idx++] = 5;
-  command_array[idx] = const_cast<char*>("0"); size_array[idx++] = 1; 
+  command_array[idx] = const_cast<char*>("0"); size_array[idx++] = 1;
   command_array[idx] = const_cast<char *>(count_string.c_str());
   size_array[idx++] = count_string.length();
 
@@ -207,11 +207,11 @@ int RedisClient::auxupdate(const TableId& table, const Key& key, const ValueMap&
   char** command_array = new char*[nCmds];
   int idx = 0;
   command_array[idx] = const_cast<char*>("HMSET"); size_array[idx++] = 5;
-  
+
   uint64_t hash = MurmurHash64A(key.c_str(), (int) key.length());
   command_array[idx] = (char*) &hash;
   size_array[idx++] = 8;
-  
+
   for (auto& it : values){
     command_array[idx] = const_cast<char *>(it.first.c_str());
     size_array[idx++] = it.first.length();
@@ -245,7 +245,7 @@ int RedisClient::update(const TableId& table, const Key& key, const ValueMap& va
   for (auto& it : values){
     fields.push_back(it.first);
   }
-  
+
   rc = read(table, key, fields, result);
   if (rc) return rc;
 
@@ -281,7 +281,7 @@ int RedisClient::insert(const TableId& table, const Key& key, const ValueMap& va
   uint64_t hash = MurmurHash64A(key.c_str(), (int) key.length());
   command_array[idx] = (char*) &hash;
   size_array[idx++] = 8;
-  
+
   const char** cmds = const_cast<const char **>(command_array);
   redisReply* reply = (redisReply *) redisCommandArgv(_dbconn, idx, cmds, size_array);
   if (reply){
@@ -336,7 +336,7 @@ int RedisClient::BulkInsert(const TableId& table, const std::vector<Key>& keys,
     hash = MurmurHash64A(key.c_str(), (int) key.length());
     command_array[idx] = (char*) &hash;
     size_array[idx++] = 8;
-    
+
     const char** cmds = const_cast<const char **>(command_array);
     rc = redisAppendCommandArgv(_dbconn, idx, cmds, size_array);
     if(rc != 0){
@@ -412,7 +412,7 @@ int RedisClient::remove(const TableId& table, const Key& key){
   hash = MurmurHash64A(key.c_str(), (int) key.length());
   command_array[idx] = (char*) &hash;
   size_array[idx++] = 8;
-  
+
   const char** cmds2 = const_cast<const char **>(command_array);
   reply = (redisReply *) redisCommandArgv(_dbconn, idx, cmds2, size_array);
   if (reply){
