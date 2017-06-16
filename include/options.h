@@ -292,7 +292,7 @@
 #endif
 
 #if YS_SCHEMA_CACHE == 2
-#define GAIA_CLIENT_CONSISTENT_CACHE
+//#define GAIA_CLIENT_CONSISTENT_CACHE
 // If set, enable the consistent client cache in the key-value storage system.
 // This cache is designed only for items that are rarely written since it adds
 // delays to writes. It is currently used only for a few items, such as

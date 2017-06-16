@@ -61,7 +61,7 @@ Marshallable *shutdownRpc(ShutdownRPCData *d);
 Marshallable *startsplitterRpc(StartSplitterRPCData *d);
 Marshallable *flushfileRpc(FlushFileRPCData *d);
 Marshallable *loadfileRpc(LoadFileRPCData *d);
-Marshallable *inbacRpc(InbacRPCData *d);
+Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify);
 
 // Auxilliary function to be used by server implementation
 // Wake up a task that was deferred, by sending a wake-up message to it

@@ -43,6 +43,7 @@
 #include "ipmisc.h"
 #include "datastruct.h"
 #include "options.h"
+#include "gaiarpcaux.h"
 
 using namespace std;
 
@@ -62,6 +63,7 @@ class InbacData {
 
 private:
 
+  InbacRPCParm *parm;
   int id;
   int phase;
   bool proposed;
@@ -78,7 +80,8 @@ private:
 
 public:
 
-  InbacData(int serverId, int vote);
+  InbacData(InbacRPCParm *param);
+  void propose(int vote);
   int getPhase() { return phase; }
   bool hasProposed() { return proposed; }
   bool hasDecided() { return decided; }

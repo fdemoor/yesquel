@@ -1445,20 +1445,58 @@ Marshallable *loadfileRpc(LoadFileRPCData *d){
   return resp;
 }
 
-Marshallable *inbacRpc(InbacRPCData *d){
+Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   int outcome;
   InbacRPCRespData *resp;
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('i');
 
+  PrepareRPCData* rpcdata = new PrepareRPCData;
+  rpcdata->data = new PrepareRPCParm;
+  rpcdata->deletedata = d->deletedata;
+
+  // fill out parameters
+  rpcdata->data->tid = d->data->tid;
+  rpcdata->data->startts = d->data->committs;
+  rpcdata->data->onephasecommit = d->data->onephasecommit;
+
+  rpcdata->data->piggy_cid = d->data->piggy_cid;
+  rpcdata->data->piggy_oid = d->data->piggy_oid;
+  rpcdata->data->piggy_len = d->data->piggy_len;
+  rpcdata->data->piggy_buf = d->data->piggy_buf;
+
+  rpcdata->deletereadset = d->deletereadset;
+  rpcdata->data->readset_len = d->data->readset_len;
+  rpcdata->data->readset = d->data->readset;
+
+  PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
+
+
   // Actual inbac protocol
-  outcome = 0;
+  outcome = respPrep->data->vote;
   //
+
+  printf("Decided to vote %d\n", outcome);
+
+  CommitRPCData *crpcdata = new CommitRPCData;
+  crpcdata->data = new CommitRPCParm;
+  crpcdata->freedata = true;
+
+  // fill out parameters
+  crpcdata->data->tid = d->data->tid;
+  crpcdata->data->committs = d->data->committs;
+  if (Timestamp::cmp(respPrep->data->mincommitts, crpcdata->data->committs) > 0) {
+    crpcdata->data->committs = respPrep->data->mincommitts;
+  }
+  crpcdata->data->committs.addEpsilon();
+  crpcdata->data->commit = outcome;
+
+  CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
 
   resp = new InbacRPCRespData;
   resp->data = new InbacRPCResp;
-  resp->data->status = 0;
+  resp->data->status = respCom->data->status;
   resp->data->decision = outcome;
   resp->freedata = true;
 
