@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -152,7 +152,7 @@ Marshallable *writeRpc(WriteRPCData *d){
   twi->alloctype=1; // if set, will free twi->buf latter but not twi->rpcrequest
 
   res = pti->coidinfo.lookupInsert(coid, trcoidptr);
-  if (res){ 
+  if (res){
     *trcoidptr = new TxRawCoid;
     trcoid = *trcoidptr;
   } else trcoid = *trcoidptr;
@@ -196,7 +196,7 @@ Marshallable *readRpc(ReadRPCData *d, void *handle, bool &defer){
   dshortprintf(1, "READ     %016llx:%016llx",
                (long long)d->data->cid, (long long)d->data->oid);
 #endif
-  
+
   readts.setIllegal();
   coid.cid=d->data->cid;
   coid.oid=d->data->oid;
@@ -243,7 +243,7 @@ Marshallable *readRpc(ReadRPCData *d, void *handle, bool &defer){
   }
 
   updateRPCResp(resp->data); // updated piggybacked fields for client caching
-  
+
 #ifndef SHORT_OP_LOG
   dprintf(1, "READR    tid %016llx:%016llx coid %016llx:%016llx "
           "ts %016llx:%016llx len %d [len %d status %d readts %016llx:%016llx]",
@@ -307,7 +307,7 @@ Marshallable *fullwriteRpc(FullWriteRPCData *d){
   resp->data = new FullWriteRPCResp;
   resp->data->status = status;
   updateRPCResp(resp->data); // updated piggybacked fields for client caching
-  
+
   resp->freedata = true;
 
   return resp;
@@ -333,7 +333,7 @@ Marshallable *fullreadRpc(FullReadRPCData *d, void *handle, bool &defer){
   dshortprintf(1, "READSV   %016llx:%016llx",
                (long long)d->data->cid, (long long)d->data->oid);
 #endif
-  
+
   readts.setIllegal();
   coid.cid=d->data->cid;
   coid.oid=d->data->oid;
@@ -347,7 +347,7 @@ Marshallable *fullreadRpc(FullReadRPCData *d, void *handle, bool &defer){
     cell = new ListCellPlus(d->data->cell, d->data->prki);
     ReportAccess(coid, cell);
   }
-#endif  
+#endif
   res = S->cLogInMemory.readCOid(coid, d->data->ts, tucoid, &readts, handle);
 
   if (res == GAIAERR_DEFER_RPC){ // defer the RPC
@@ -460,7 +460,7 @@ static int getCurrTucoid(COid &coid, Ptr<TxRawCoid> tx_trcoid,
       assert(lastwrite->type == 3);
       curr = tx_trcoid->getNext(lastwrite); // start after write
       twsvi = dynamic_cast<TxWriteSVItem*>(lastwrite);
-      
+
     } else {
       twsvi = 0; // get it from log
       curr = tx_trcoid->getFirst(); // start at first item
@@ -478,7 +478,7 @@ static int getCurrTucoid(COid &coid, Ptr<TxRawCoid> tx_trcoid,
     // read log to retrieve last known value for coid
     res = S->cLogInMemory.readCOid(coid, readTs, log_tucoid, 0, 0);
     if (res) return res;
-    
+
     if (log_tucoid->Writevalue){ // currently, we only support supervalues here
       return GAIAERR_WRONG_TYPE;
     }
@@ -497,7 +497,7 @@ static int getCurrTucoid(COid &coid, Ptr<TxRawCoid> tx_trcoid,
   // clone tucoid so we can apply updates of transaction
   twsvi = new TxWriteSVItem(*twsvi);
   Ptr<TxUpdateCoid> curr_tucoid = new TxUpdateCoid(twsvi);
-  
+
   // now, we have a twsvi to start with, and the rest of items to
   // apply to it
   while (curr != tx_trcoid->getLast()){
@@ -518,7 +518,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
   Ptr<TxRawCoid> trcoid = 0;
   Ptr<TxUpdateCoid> tucoidcurr = 0;
   TxWriteSVItem *twsvitmp;
-  TxListAddItem *tlai = 0;  
+  TxListAddItem *tlai = 0;
   COid coid;
   int res;
   int status=0;
@@ -527,7 +527,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
   int ncells = -1;
   int size = -1;
 #endif
-  
+
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('+');
 #ifndef SHORT_OP_LOG
@@ -560,7 +560,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
       return 0;
     }
   }
-#endif  
+#endif
 
   S->cPendingTx.getInfo(d->data->tid, pti);
 
@@ -571,7 +571,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
   //   GAIAERR_CELL_OUTRANGE if this is the wrong place to add the cell
   //                         (not leaf or outside scope)
   //   another value: if there was an error
-  
+
   if (flags&1){ // check boundaries and existence of item
     trcoidptr = 0;
     pti->coidinfo.lookup(coid, trcoidptr); // check if tx wrote coid
@@ -586,9 +586,9 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
       status = GAIAERR_CELL_OUTRANGE;
       goto end;
     }
-      
+
     if (d->data->prki.isset()){
-      // provide prki to TxWriteSVItem if it doesn't have it already      
+      // provide prki to TxWriteSVItem if it doesn't have it already
       twsvitmp->setPrkiSticky(d->data->prki);
     }
     ListCellPlus *c1, *c2;
@@ -598,7 +598,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
       // nothing to the left and not leftmost node
       status = GAIAERR_CELL_OUTRANGE; goto end;
     }
-    
+
     c2 = twsvitmp->cells.keyInInterval(&c, &c, 5); // search [cell, inf)
     if (!c2 && twsvitmp->attrs[DTREENODE_ATTRIB_RIGHTPTR]){
       // nothing to the right and not rightmost node
@@ -611,7 +611,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
       goto end;
     }
   }
-  
+
   res = pti->coidinfo.lookupInsert(coid, trcoidptr);
   if (res){ *trcoidptr = new TxRawCoid; }
   trcoid = *trcoidptr;
@@ -619,7 +619,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
   tlai = new TxListAddItem(coid, d->data->prki,
                            d->data->cell, d->data->level);
   trcoid->add(tlai);
-  
+
 #if DTREE_SPLIT_LOCATION == 1 // provide info about size of node in response
   if (!tucoidcurr.isset()){
     res = getCurrTucoid(coid, trcoid, d->data->ts, tucoidcurr);
@@ -632,7 +632,7 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
     ncells = 1; // the add we just did is not included in tucoidcurr
     size = CellSize(&tlai->item);
   }
-    
+
   ncells += tucoidcurr->WriteSV->cells.getNitems();
   size += ListCellsSize(tucoidcurr->WriteSV->cells);
 #endif
@@ -646,9 +646,9 @@ Marshallable *listaddRpc(ListAddRPCData *d, void *&state){
   resp->data->ncells = ncells;
   resp->data->size = size;
 #endif
-  
+
   updateRPCResp(resp->data); // updated piggybacked fields for client caching
-  
+
   resp->freedata = true;
 
   return resp;
@@ -698,7 +698,7 @@ Marshallable *listdelrangeRpc(ListDelRangeRPCData *d){
   resp->data = new ListDelRangeRPCResp;
   resp->data->status = status;
   updateRPCResp(resp->data); // updated piggybacked fields for client caching
-  
+
   resp->freedata = true;
 
   return resp;
@@ -808,7 +808,7 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
       fflush(stdout);
       abort();
       vote=1; goto end;
-    } 
+    }
     if (pti->status == PTISTATUS_VOTEDYES){ vote=0; goto end; }
     if (pti->status == PTISTATUS_VOTEDNO){ vote=1; goto end; }
     if (pti->status == PTISTATUS_CLEAREDABORT){
@@ -831,15 +831,15 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
         pti->updatesCachable = true; // mark tx as updating cachable data
 
       res = pti->coidinfo.lookupInsert(coid, trcoidptr);
-      if (res){ 
+      if (res){
         *trcoidptr = new TxRawCoid;
         Ptr<TxRawCoid> trcoid = *trcoidptr;
-        
+
         TxWriteItem *twi = new TxWriteItem(coid, 0);
 
         // create and add new item to write set
         twi->len = d->data->piggy_len;
-        // make private copy of data        
+        // make private copy of data
         char *buf = (char*) malloc(d->data->piggy_len);
         memcpy(buf, d->data->piggy_buf, d->data->piggy_len);
         twi->buf = buf;
@@ -890,8 +890,8 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
       if (res){ // found coid, this is one that we are responsible for
         looim = S->cLogInMemory.getAndLock(coid, true, false); assert(looim);
         // check for pending updates
-        if (!looim->pendingentries.empty()){ 
-          vote = 1; 
+        if (!looim->pendingentries.empty()){
+          vote = 1;
         }
         else {
           // check for updates in logentries
@@ -923,11 +923,11 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
       looim_list.pushTail(looim); // looims that we locked
 
       // check last-read timestamp
-      if (Timestamp::cmp(proposecommitts, looim->LastRead) < 0) 
+      if (Timestamp::cmp(proposecommitts, looim->LastRead) < 0)
         proposecommitts = looim->LastRead; // track largest read timestamp seen
 
       // check for conflicts with other transactions in log
-      LinkList<SingleLogEntryInMemory> *entries = &looim->logentries; 
+      LinkList<SingleLogEntryInMemory> *entries = &looim->logentries;
       if (!entries->empty()){
         SingleLogEntryInMemory *sleim;
         // for each update in the looim's log
@@ -949,7 +949,7 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
       }
 
       // now check for conflicts with pending transactions
-      entries = &looim->pendingentries; 
+      entries = &looim->pendingentries;
       if (!entries->empty()){
         SingleLogEntryInMemory *sleim;
         // for each update in the looim's log
@@ -1000,7 +1000,7 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
         // must be revised to move all of those entries (currently, it only
         // moves one)
         assert(!tucoid->pendingentriesSleim);
-        
+
         // remember sleim so that we can quickly find it at commit time
         tucoid->pendingentriesSleim = sleim;
         looim->unlock(); // ok to release lock even before we log, since
@@ -1056,7 +1056,7 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
       parm.tid = d->data->tid;
       // we use dummywaitingts (and discard this value) since waitingts is
       // not useful in 1PC where there is no delay between prepare and commit
-      status = doCommitWork(&parm, pti, dummywaitingts); 
+      status = doCommitWork(&parm, pti, dummywaitingts);
     }
   }
 
@@ -1077,7 +1077,7 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
   updateRPCResp(resp->data); // updated piggybacked fields for client caching
 
   //pti->unlock();
-  
+
 
 #ifndef SHORT_OP_LOG
   dprintf(1, "PREPARE  tid %016llx:%016llx startts %016llx:%016llx "
@@ -1103,7 +1103,7 @@ Marshallable *prepareRpc(PrepareRPCData *d, void *&state, void *rpctasknotify){
 int checkTucoidForGrowth(Ptr<TxUpdateCoid> tucoid){
   if (tucoid->WriteSV){ return 1; } // if tx is writing value, then yes
   // now check each update
-  
+
   for (TxListItem *tli = tucoid->Litems.getFirst();
        tli != tucoid->Litems.getLast();
        tli = tucoid->Litems.getNext(tli)){
@@ -1136,7 +1136,7 @@ int doCommitWork(CommitRPCParm *parm, Ptr<PendingTxInfo> pti,
     // it impossible for clients to read the old versions of those objects with
     // the new cache version number just bumped.
   }
-  
+
   if (parm->commit == 0){ // commit
     for (ptr = pti->coidinfo.getFirst(); ptr != pti->coidinfo.getLast();
          ptr = pti->coidinfo.getNext(ptr)){
@@ -1164,7 +1164,7 @@ int doCommitWork(CommitRPCParm *parm, Ptr<PendingTxInfo> pti,
             //       deferredhandle that later checks if the coid is too large
             //       and, if so, splits.
           } else {
-            TxWriteSVItem *twsvi = tucoid->WriteSV;          
+            TxWriteSVItem *twsvi = tucoid->WriteSV;
             if (twsvi){
               int ncells = twsvi->cells.getNitems();
               // split if too many cells
@@ -1181,7 +1181,7 @@ int doCommitWork(CommitRPCParm *parm, Ptr<PendingTxInfo> pti,
 #endif
       } // if pendingsleim
     } // for
-  
+
     S->cDiskLog.logCommitAsync(parm->tid, parm->committs);
 
 #if (DTREE_SPLIT_LOCATION != 1) && !defined(LOCALSTORAGE)
@@ -1191,7 +1191,7 @@ int doCommitWork(CommitRPCParm *parm, Ptr<PendingTxInfo> pti,
          coidnode = toSplit.getNext(coidnode)){
       SplitNode(coidnode->key, 0);
     }
-#endif    
+#endif
   } else {
     // note: abort due to application (parm->commit == 2) does not
     // require removing writes from cLogInMemory or logging an abort,
@@ -1250,7 +1250,7 @@ Marshallable *commitRpc(CommitRPCData *d){
   resp->data = new CommitRPCResp;
 
   res = S->cPendingTx.getInfoNoCreate(d->data->tid, pti);
-  if (res) 
+  if (res)
     ; // did not find tid. Nothing to do. This is likely because of
       // the GAIA_WRITE_ON_PREPARE optimization
   else {
@@ -1291,7 +1291,7 @@ Marshallable *subtransRpc(SubtransRPCData *d){
   resp->data = new SubtransRPCResp;
 
   res = S->cPendingTx.getInfoNoCreate(d->data->tid, pti);
-  if (res) 
+  if (res)
     ; // did not find tid. Nothing to do. This is likely because of
       // the GAIA_WRITE_ON_PREPARE optimization
   else {
@@ -1442,5 +1442,25 @@ Marshallable *loadfileRpc(LoadFileRPCData *d){
   resp->freedata = true;
   resp->data->status = res;
   resp->data->reserved = 0;
+  return resp;
+}
+
+Marshallable *inbacRpc(InbacRPCData *d){
+
+  int outcome;
+  InbacRPCRespData *resp;
+  assert(S); // if this assert fails, forgot to call initStorageServer()
+  dshowchar('i');
+
+  // Actual inbac protocol
+  outcome = 0;
+  //
+
+  resp = new InbacRPCRespData;
+  resp->data = new InbacRPCResp;
+  resp->data->status = 0;
+  resp->data->decision = outcome;
+  resp->freedata = true;
+
   return resp;
 }

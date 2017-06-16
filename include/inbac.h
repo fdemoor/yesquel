@@ -1,15 +1,16 @@
 //
-// storageserver-rpc.h
+// inbac.h
 //
-// Stubs for RPCs at the storage server
+// Data structures and event handlers for INBAC protocol
 //
 
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
+  Modified code: Copyright (c) 2017 LPD, EPFL
   All rights reserved.
 
-  Written by Marcos K. Aguilera
+  Written by Florestan De Moor
 
   MIT License
 
@@ -34,30 +35,55 @@
   SOFTWARE.
 */
 
-#ifndef _STORAGESERVER_RPC_H
-#define _STORAGESERVER_RPC_H
+#ifndef _INBAC_H
+#define _INBAC_H
 
-#include "tcpdatagram.h"
-#include "grpctcp.h"
-#include "task.h"
+#include <utility>
 
+#include "ipmisc.h"
+#include "datastruct.h"
+#include "options.h"
 
-// stubs
-int nullRpcStub(RPCTaskInfo *rti);
-int getstatusRpcStub(RPCTaskInfo *rti);
-int writeRpcStub(RPCTaskInfo *rti);
-int readRpcStub(RPCTaskInfo *rti);
-int fullwriteRpcStub(RPCTaskInfo *rti);
-int fullreadRpcStub(RPCTaskInfo *rti);
-int listaddRpcStub(RPCTaskInfo *rti);
-int listdelrangeRpcStub(RPCTaskInfo *rti);
-int attrsetRpcStub(RPCTaskInfo *rti);
-int prepareRpcStub(RPCTaskInfo *rti);
-int commitRpcStub(RPCTaskInfo *rti);
-int subtransRpcStub(RPCTaskInfo *rti);
-int shutdownRpcStub(RPCTaskInfo *rti);
-int startsplitterRpcStub(RPCTaskInfo *rti);
-int flushfileRpcStub(RPCTaskInfo *rti);
-int loadfileRpcStub(RPCTaskInfo *rti);
-int inbacRpcStub(RPCTaskInfo *rti);
+using namespace std;
+
+class VoteCollRPCData : public Marshallable {
+public:
+  Set<pair<IPPortServerno,bool>> *data;
+  int freedata;
+  VoteCollRPCData()  { freedata = 0; data = new Set<pair<IPPortServerno,bool>>; }
+  ~VoteCollRPCData(){ if (freedata){ delete data; } }
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+int inbacTimeoutHandler(void* arg);
+
+class InbacData {
+
+private:
+
+  int id;
+  int phase;
+  bool proposed;
+  bool decided;
+  VoteCollRPCData *collections0;
+  Set<pair<IPPortServerno,Set<pair<IPPortServerno,bool>>>> *collections1;
+  VoteCollRPCData *collectionHelp;
+  bool wait;
+  bool val;
+  bool decision;
+  bool proposal;
+  int cnt;
+  int cntHelp;
+
+public:
+
+  InbacData(int serverId, int vote);
+  int getPhase() { return phase; }
+  bool hasProposed() { return proposed; }
+  bool hasDecided() { return decided; }
+  int getId() { return id; }
+
+};
+
 #endif

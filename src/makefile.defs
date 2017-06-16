@@ -7,7 +7,7 @@ LINK.o = $(LINK.cc)
 CXXFLAGS=-DNDEBUG -O3 -fPIC -Wall -std=c++11 -Wno-unused-function -Wno-write-strings -Wno-invalid-offsetof -Wno-parentheses -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-result -I$(INCLUDEDIR) -I/usr/include
 
 ## Replace the above flags with the following to compile in debug mode
-#CXXFLAGS=-g -fPIC -Wall -std=c++11 -Wno-unused-function -Wno-write-strings -Wno-invalid-offsetof -Wno-parentheses -I$(INCLUDEDIR) -I/usr/include
+CXXFLAGS=-g -fPIC -Wall -std=c++11 -Wno-unused-function -Wno-write-strings -Wno-invalid-offsetof -Wno-parentheses -I$(INCLUDEDIR) -I/usr/include
 
 CXXUNUSEDFLAGS=-Wno-unused-but-set-variable -Wno-unused-variable -Wno-unused-value
 

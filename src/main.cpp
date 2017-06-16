@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -113,14 +113,15 @@ RPCProc RPCProcs[] = {  nullRpcStub,         // RPC 0
                         shutdownRpcStub,     // RPC 12
                         startsplitterRpcStub,// RPC 13
                         flushfileRpcStub,    // RPC 14
-                        loadfileRpcStub      // RPC 15
+                        loadfileRpcStub,     // RPC 15
+                        inbacRpcStub         // RPC 16
 
 #ifdef STORAGESERVER_SPLITTER
                         ,
-                        ss_getrowidRpcStub   // RPC 16
+                        ss_getrowidRpcStub   // RPC 17
 #endif
                      };
-  
+
 struct ConsoleCmdMap {
   const char *cmd;
   const char *helpmsg;
@@ -148,12 +149,12 @@ ConsoleCmdMap ConsoleCmds[] = {
   {"print", ":           print contents of storage", cmd_print},
   {"printdetail", ":     print contents of storage in detail",cmd_print_detail},
   {"save_individual", ": flush contents to disk", cmd_flush},
-  {"save", " filename:   flush contents to file", cmd_flushfile}, 
+  {"save", " filename:   flush contents to file", cmd_flushfile},
   {"splitter", ":        start splitter", cmd_splitter},
   {"quit", ":            quit server", cmd_quit},
 #ifdef VALG_LEAK
   {"vchk", ":            run valgrind's leak check", cmd_leakcheck},
-#endif  
+#endif
 };
 
 #define NConsoleCmds (sizeof(ConsoleCmds)/sizeof(ConsoleCmdMap))
@@ -187,7 +188,7 @@ int cmd_flush(char *parm, StorageServerState *S){
   printf("Flushing to disk...");
   S->cLogInMemory.flushToDisk(ts);
   printf(" Done!\n");
-  
+
   return 0;
 }
 
@@ -218,7 +219,7 @@ int cmd_flushfile(char *parm, StorageServerState *S){
   res = S->cLogInMemory.flushToFile(ts, parm);
   if (res) printf("Error. Cannot write file for some reason\n");
   else printf(" Done!\n");
-  
+
   return 0;
 }
 
@@ -261,7 +262,7 @@ int cmd_debug(char *parm, StorageServerState *S){
 int cmd_leakcheck(char *parm, StorageServerState *S){
 #ifdef VALG_LEAK
   VALGRIND_DO_ADDED_LEAK_CHECK;
-#endif  
+#endif
   return 0;
 }
 
@@ -285,7 +286,7 @@ void console(void){
     cmd = strtok(line, " \t\n");
     if (!cmd || !*cmd) continue;
     strlower(cmd);
-    
+
     parm = strtok(0, " \t\n");
     for (i = 0; i < (int)NConsoleCmds; ++i){
       if (strcmp(cmd, ConsoleCmds[i].cmd)==0){
@@ -294,7 +295,7 @@ void console(void){
       }
     }
     if (i == NConsoleCmds)
-      printf("Unrecognized command %s. Try \"help\".\n", cmd); 
+      printf("Unrecognized command %s. Try \"help\".\n", cmd);
   }
 }
 
@@ -333,7 +334,7 @@ protected:
     initServerTask(tgetTaskScheduler());
 #endif
   }
-  
+
 public:
   RPCServerGaia(RPCProc *procs, int nprocs, int portno) : RPCTcp() {
     launch(SERVER_WORKERTHREADS);
@@ -458,7 +459,7 @@ int main(int argc, char **argv)
 
   UniqueId::init(myip);
 
-  
+
   printf("Compilation time %s %s configuration %s\n",
          __DATE__, __TIME__, COMPILECONFIG);
   printf("Configuration file %s debuglog %s\n", Configfile,
@@ -491,7 +492,7 @@ int main(int argc, char **argv)
     putchar('\n'); fflush(stdout);
   }
 
-  //RPCServer.launch(0); 
+  //RPCServer.launch(0);
   mssleep(1000);
 
 #if defined(STORAGESERVER_SPLITTER) && DTREE_SPLIT_LOCATION >= 2
@@ -523,7 +524,7 @@ int main(int argc, char **argv)
     SC = 0;
   }
 #endif
-  
+
   RPCServer->exitThreads();
   mssleep(500);
 

@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -69,8 +69,9 @@ const int NULL_RPCNO = 0,
           SHUTDOWN_RPCNO = 12,
           STARTSPLITTER_RPCNO = 13,
           FLUSHFILE_RPCNO = 14,
-          LOADFILE_RPCNO = 15;
-          // RPC 16 is used by storageserver-splitter.h when STORAGESERVER_SPLITTER is defined (see also splitter-client.h)
+          LOADFILE_RPCNO = 15,
+          INBAC_RPCNO = 16;
+          // RPC 17 is used by storageserver-splitter.h when STORAGESERVER_SPLITTER is defined (see also splitter-client.h)
 
 // error codes
 #define GAIAERR_GENERIC         -1 // generic error code
@@ -197,7 +198,7 @@ public:
   int freedata;
   char *freedatabuf;
   WriteRPCData()  { freedata = 0; freedatabuf = 0; iov = 0; }
-  ~WriteRPCData(){ 
+  ~WriteRPCData(){
     if (iov) delete iov;
     if (freedatabuf) delete freedatabuf;
     if (freedata) delete data;
@@ -219,7 +220,7 @@ public:
   int freedata;
   WriteRPCRespData(){ freedata = 0; }
   ~WriteRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -275,9 +276,9 @@ public:
   // data and data->buf, and will set freedata to true, so that it is freed
   // below after the RPC layer sends back the response.
   ReadRPCRespData(){ freedata = 0; freedatabuf = 0;}
-  ~ReadRPCRespData(){ if (freedatabuf) free(freedatabuf); 
+  ~ReadRPCRespData(){ if (freedatabuf) free(freedatabuf);
                       if (freedata) delete data; }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
   static void clientFreeReceiveBuffer(char *data);
      // A client having data->buf can call this function
@@ -307,7 +308,7 @@ struct PrepareRPCParm {
   Oid piggy_oid;          // piggyback oid
   int piggy_len;          // piggyback buffer length
   char *piggy_buf;        // piggyback buffer
-  
+
   int  readset_len;       // size of readset array below. Used in GAIA_OCC only
   COid *readset;          // used in GAIA_OCC only
 
@@ -320,7 +321,7 @@ public:
   int deletereadset;
   char *freedatabuf;
   PrepareRPCData()  { deletedata = 0; deletereadset = 0; freedatabuf = 0; }
-  ~PrepareRPCData(){ 
+  ~PrepareRPCData(){
     if (deletereadset) delete [] data->readset;
     if (deletedata){ delete data; }
     if (freedatabuf) delete freedatabuf;
@@ -332,7 +333,7 @@ public:
 struct PrepareRPCResp {
   int status;                  // status of operation
   int vote;                    // 0=commit, 1=abort
-  Timestamp mincommitts;       // if vote==0, the min possible commit timestamp 
+  Timestamp mincommitts;       // if vote==0, the min possible commit timestamp
                                //   (commit timestamp must be strictly
                                //   greater than this value)
   u64 versionNoForCache;       // version number for cache
@@ -346,7 +347,7 @@ public:
   int freedata;
   PrepareRPCRespData(){ freedata = 0; }
   ~PrepareRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -380,7 +381,57 @@ public:
   int freedata;
   CommitRPCRespData(){ freedata = 0; }
   ~CommitRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+// ------------------------------- INBAC RPC -----------------------------------
+
+struct InbacRPCParm {
+  Tid tid;               // transaction id
+  Timestamp committs;    // commit timestamp
+  int onephasecommit;     // whether to commit as well as prepare
+                          // (used when transaction spans just one server)
+
+  Set<IPPortServerno> servers;  // set of storage servers
+  IPPortServerno no;            // no of server receiving the data
+
+  // stuff for piggyback write optimization (if GAIA_WRITE_ON_PREPARE enabled)
+  Cid piggy_cid;          // piggyback container id
+  Oid piggy_oid;          // piggyback oid
+  int piggy_len;          // piggyback buffer length
+  char *piggy_buf;        // piggyback buffer
+
+  int  readset_len;       // size of readset array below. Used in GAIA_OCC only
+  COid *readset;          // used in GAIA_OCC only
+};
+
+class InbacRPCData : public Marshallable {
+public:
+  InbacRPCParm *data;
+  int deletedata;
+  int deletereadset;
+  InbacRPCData() { deletedata = 0; deletereadset = 0; }
+  ~InbacRPCData(){
+      if (deletereadset) delete [] data->readset;
+      if (deletedata){ delete data; }
+  }
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+struct InbacRPCResp {
+  int status;           // should always be zero
+  int decision;         // 0 = commit, 1 = abort
+};
+
+class InbacRPCRespData : public Marshallable {
+public:
+  InbacRPCResp *data;
+  int freedata;
+  InbacRPCRespData(){ freedata = 0; }
+  ~InbacRPCRespData(){ if (freedata){ delete data; } }
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -413,7 +464,7 @@ public:
   int freedata;
   SubtransRPCRespData(){ freedata = 0; }
   ~SubtransRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -628,7 +679,7 @@ public:
   ListAddRPCParm *data;
   int freedata;  // caller should set if data should be deleted in destructor
   ListAddRPCData()  { serializeKeyinfoBuf = 0; freedata = 0; }
-  ~ListAddRPCData(){ 
+  ~ListAddRPCData(){
     if (serializeKeyinfoBuf) free(serializeKeyinfoBuf);
     if (freedata) delete data;
   }
@@ -642,7 +693,7 @@ struct ListAddRPCResp {
                                // items are added
   int ncells;           // approx # of cells in node (used for client splitter)
   int size;             // approx size of node
-#endif  
+#endif
   u64 versionNoForCache;       // version number for cache
   Timestamp tsForCache;        // timestamp for cache
   Timestamp reserveTsForCache; // reserve timestamp for cache
@@ -654,7 +705,7 @@ public:
   int freedata;
   ListAddRPCRespData(){ freedata = 0; }
   ~ListAddRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -685,7 +736,7 @@ public:
   int freedata;  // caller should set if data should be deleted in destructor
   ListDelRangeRPCData()  { serializeKeyinfoBuf = 0;
                            freedata = 0; }
-  ~ListDelRangeRPCData(){ 
+  ~ListDelRangeRPCData(){
     if (serializeKeyinfoBuf) free(serializeKeyinfoBuf);
     if (freedata) delete data;
   }
@@ -706,7 +757,7 @@ public:
   int freedata;
   ListDelRangeRPCRespData(){ freedata = 0; }
   ~ListDelRangeRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -727,7 +778,7 @@ public:
   AttrSetRPCParm *data;
   int freedata;  // caller should set if data should be deleted in destructor
   AttrSetRPCData()  {  freedata = 0; }
-  ~AttrSetRPCData(){ 
+  ~AttrSetRPCData(){
     if (freedata) delete data;
   }
   int marshall(iovec *bufs, int maxbufs);
@@ -744,7 +795,7 @@ public:
   int freedata;
   AttrSetRPCRespData(){ freedata = 0; }
   ~AttrSetRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -765,7 +816,7 @@ public:
   AttrGetRPCParm *data;
   int freedata;  // caller should set if data should be deleted in destructor
   AttrGetRPCData()  {  freedata = 0; }
-  ~AttrGetRPCData(){ 
+  ~AttrGetRPCData(){
     if (freedata) delete data;
   }
   int marshall(iovec *bufs, int maxbufs);
@@ -783,7 +834,7 @@ public:
   int freedata;
   AttrGetRPCRespData(){ freedata = 0; }
   ~AttrGetRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -807,12 +858,12 @@ class FullReadRPCData : public Marshallable {
 private:
   char *serializeKeyinfoBuf;  // intended to be used by client only.
                              // this is a buffer allocated to serialize RcKeyInfo
-  
+
 public:
   FullReadRPCParm *data;
   int freedata;  // caller should set if data should be deleted in destructor
   FullReadRPCData(){ serializeKeyinfoBuf = 0; freedata = 0; }
-  ~FullReadRPCData(){ 
+  ~FullReadRPCData(){
     if (serializeKeyinfoBuf) free(serializeKeyinfoBuf);
     if (freedata) delete data;
   }
@@ -855,7 +906,7 @@ public:
     tmpprkiserializebuf = 0;
   }
   ~FullReadRPCRespData();
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 
@@ -895,7 +946,7 @@ public:
   char *deletecelloids; // if non-null, free it in destructor; set by client
   FullWriteRPCData() { serializeKeyinfoBuf = 0; freedata = 0;
                        deletecelloids = 0; }
-  ~FullWriteRPCData(){ 
+  ~FullWriteRPCData(){
     if (serializeKeyinfoBuf) free(serializeKeyinfoBuf);
     if (deletecelloids) delete [] deletecelloids;
     if (freedata) delete data;
@@ -917,7 +968,7 @@ public:
   int freedata;
   FullWriteRPCRespData(){ freedata = 0; }
   ~FullWriteRPCRespData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs); 
+  int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };
 

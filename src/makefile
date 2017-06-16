@@ -1,12 +1,12 @@
 include makefile.defs
 
-TARGET = storageserver shell callserver test-sql-simple yesquel.a 
+TARGET = storageserver shell callserver test-sql-simple yesquel.a
 
 CLIENTLIB_SRC = clientdir.cpp clientlib.cpp clientlib-common.cpp supervalue.cpp valbuf.cpp ccache.cpp
 
 CLIENTLIBAUX_SRC = config.tab.cpp debug.cpp gaiarpcaux.cpp gaiatypes.cpp grpctcp.cpp ipmisc.cpp lex.yy.cpp newconfig.cpp os.cpp record.cpp scheduler.cpp pendingtx.cpp task.cpp tcpdatagram.cpp tmalloc.cpp util.cpp util-more.cpp
 
-STORAGESERVER_SRC = storageserver.cpp storageserverstate.cpp storageserver-rpc.cpp diskstorage.cpp logmem.cpp main.cpp pendingtx.cpp disklog.cpp ccache-server.cpp
+STORAGESERVER_SRC = storageserver.cpp storageserverstate.cpp storageserver-rpc.cpp diskstorage.cpp logmem.cpp main.cpp pendingtx.cpp disklog.cpp ccache-server.cpp inbac.cpp
 
 STORAGESERVERLOCALSTORAGE_SRC = clientlib-local.cpp
 

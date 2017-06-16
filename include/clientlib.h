@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -101,17 +101,17 @@ private:
 #endif
 
   TxCache txCache;
-  
+
   void updateTxCache(COid &coid, Ptr<Valbuf> &buf); // clear pending ops and
                                                     // updates txcache
-  
+
   // Try to read data locally using TxCache from transaction.
   // If there is data to be read, data is placed in *buf if *buf!=0;
   //   if *buf=0 then it gets allocated and should be freed later with
   //   readFreeBuf. Note that buffer is allocated only if there is
   //   data to be read.
   //
-  // Returns: 0 = nothing read, 
+  // Returns: 0 = nothing read,
   //          1 = all data read
   //          GAIAERR_TX_ENDED = cannot read because transaction is aborted
   //          GAIAERR_WRONG_TYPE = wrong type
@@ -156,6 +156,18 @@ private:
   //  or to smallest possible timestamp if no servers reported a legal timestamp
   int auxcommit(int outcome, Timestamp committs, Timestamp *waitingts);
 
+  //---------------------------- INBAC -----------------------------------------
+
+  struct InbacCallbackData {
+    Semaphore sem; // to wait for response
+    int serverno;
+    InbacRPCResp data;
+    InbacCallbackData *prev, *next; // linklist stuff
+  };
+
+  int auxinbac(Timestamp committs);
+  static void auxinbaccallback(char *data, int len, void *callbackdata);
+
   // ---------------------------- Subtrans RPC ---------------------------------
 
   struct SubtransCallbackData {
@@ -166,7 +178,7 @@ private:
 
   static void auxsubtranscallback(char *data, int len, void *callbackdata);
   int auxsubtrans(int level, int action);
-  
+
 
 public:
   Transaction(StorageConfig *sc);
@@ -253,7 +265,7 @@ public:
   int listAdd(COid coid, ListCell *cell, Ptr<RcKeyInfo> prki, int flags,
               int *ncells=0, int *size=0);
 #endif
-  
+
   // deletes a range of cells
   // intervalType indicates how the interval is to be treated.
   // The possible values are
@@ -263,7 +275,7 @@ public:
   // where inf is infinity
   int listDelRange(COid coid, u8 intervalType, ListCell *cell1,
                    ListCell *cell2, Ptr<RcKeyInfo> prki);
-  
+
   // sets an attribute
   int attrSet(COid coid, u32 attrid, u64 attrvalue);
 
@@ -284,6 +296,14 @@ public:
   // try to commit
   // Return 0 if committed, non-0 if aborted
   int tryCommit(Timestamp *retcommitts=0);
+
+  // try to commit using 2PC protocol
+  // Return 0 if committed, non-0 if aborted
+  int tryCommit2PC(Timestamp *retcommitts=0);
+
+  // try to commit using INBAC protocol
+  // Return 0 if committed, non-0 if aborted
+  int tryCommitINBAC(Timestamp *retcommitts=0);
 
   // try to abort
   int abort(void);

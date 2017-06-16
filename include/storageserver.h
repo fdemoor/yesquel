@@ -8,7 +8,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -61,6 +61,7 @@ Marshallable *shutdownRpc(ShutdownRPCData *d);
 Marshallable *startsplitterRpc(StartSplitterRPCData *d);
 Marshallable *flushfileRpc(FlushFileRPCData *d);
 Marshallable *loadfileRpc(LoadFileRPCData *d);
+Marshallable *inbacRpc(InbacRPCData *d);
 
 // Auxilliary function to be used by server implementation
 // Wake up a task that was deferred, by sending a wake-up message to it

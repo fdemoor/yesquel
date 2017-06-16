@@ -8,7 +8,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -71,7 +71,7 @@
 #ifndef STORAGESERVER_SPLITTER
 #define SS_GETROWID_RPCNO 2
 #else
-#define SS_GETROWID_RPCNO 16
+#define SS_GETROWID_RPCNO 17
 #endif
 
 i64 GetRowidFromServer(Cid cid, i64 hint); // get a fresh rowid for a given cid
@@ -106,7 +106,7 @@ private:
   static int computeDelayFromTimeRetrying(SplitterStats &load, u64& expiration);
   static int computeDelayFromNodesize(unsigned nelements, unsigned nbytes,
                                       u64& expiration);
-  
+
 public:
   SplitterThrottle();
   void ReportLoad(SplitterStats &newload);

@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -93,6 +93,13 @@ int main(int argc, char **argv)
     res=sqlite3_finalize(stmt); assert(res==0);
   }
   printf(" success\n");
+
+  s1 = "drop table t1;";
+  printf("%s\n", s1);
+  res=sqlite3_prepare(db, s1, -1, &stmt, 0); assert(res==0);
+  res=sqlite3_step(stmt);
+  printres(res);
+  sqlite3_finalize(stmt);
 
   res=sqlite3_close(db); assert(res==0);
   return 0;

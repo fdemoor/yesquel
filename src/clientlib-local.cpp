@@ -11,7 +11,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -134,7 +134,7 @@ int LocalTransaction::writev(COid coid, int nbufs, iovec *bufs){
     // we will place this buffer in the txcache below, inside a Valbuf (which is
     // destroyed by calling LocalTransaction::freeReadBuf())
   rpcdata->data->buf = buf;
-  rpcdata->freedatabuf = 0; 
+  rpcdata->freedatabuf = 0;
   iovecmemcpy(buf, bufs, nbufs);
 
   rpcresp = (WriteRPCRespData*) writeRpc(rpcdata);
@@ -154,12 +154,12 @@ int LocalTransaction::writev(COid coid, int nbufs, iovec *bufs){
   vb->u.buf = buf;
   //vb->u.buf = LocalTransaction::allocReadBuf(totlen);
   //memcpy(vb->u.buf, buf, totlen);
-  //iovecmemcpy(vb->u.buf, bufs, nbufs); 
+  //iovecmemcpy(vb->u.buf, bufs, nbufs);
   delete rpcdata; // will not delete buf
 
   Ptr<Valbuf> vbuf = vb;
   txCache.setCache(coid, currlevel, vbuf);
-  
+
 
   respstatus = rpcresp->data->status;
 
@@ -201,7 +201,7 @@ int LocalTransaction::put3(COid coid, char *data1, int len1, char *data2,
 
 // Try to read data locally using TxCache from transaction.
 // typ: 0 for value, 1 for supervalue
-// Returns:       0 = nothing read, 
+// Returns:       0 = nothing read,
 //                1 = all data read
 //                GAIAERR_TX_ENDED = cannot read because transaction is aborted
 //                GAIAERR_WRONG_TYPE = wrong type
@@ -240,11 +240,11 @@ int LocalTransaction::vget(COid coid, Ptr<Valbuf> &buf){
 
   // add server index to set of servers participating in transaction
   // Not for read items
-  // Servers.insert(server); 
+  // Servers.insert(server);
 
   rpcdata = new ReadRPCData;
   rpcdata->data = new ReadRPCParm;
-  rpcdata->freedata = true; 
+  rpcdata->freedata = true;
 
   // fill out parameters
   rpcdata->data->tid = Id;
@@ -312,11 +312,11 @@ int LocalTransaction::vsuperget(COid coid, Ptr<Valbuf> &buf, ListCell *cell,
 
   // add server index to set of servers participating in transaction
   // Not for read items
-  // Servers.insert(server); 
+  // Servers.insert(server);
 
   rpcdata = new FullReadRPCData;
   rpcdata->data = new FullReadRPCParm;
-  rpcdata->freedata = true; 
+  rpcdata->freedata = true;
 
   // fill out parameters
   rpcdata->data->tid = Id;
@@ -446,13 +446,13 @@ int LocalTransaction::auxprepare(Timestamp &chosents){
   rpcdata->data->onephasecommit = 0; // no need to use 1pc with local
                                      // transactions
   rpcdata->data->piggy_cid = 0;  // no piggyback write optimization
-  rpcdata->data->piggy_oid = 0;  
-  rpcdata->data->piggy_len = -1;  
-  rpcdata->data->piggy_buf = 0;  
+  rpcdata->data->piggy_oid = 0;
+  rpcdata->data->piggy_len = -1;
+  rpcdata->data->piggy_buf = 0;
 
   rpcresp = (PrepareRPCRespData*) prepareRpc(rpcdata, state, 0);
-  if (!rpcresp){ 
-    // function wants us to call again with state after logging is finished, 
+  if (!rpcresp){
+    // function wants us to call again with state after logging is finished,
     // but there is no logging in the local version, so we call back immediately
     rpcresp = (PrepareRPCRespData*) prepareRpc(rpcdata, state, 0);
     assert(state==0);
@@ -574,11 +574,13 @@ int LocalTransaction::releaseSubtrans(int level){
 // try to commit
 // Returns
 //    0 if committed,
-//    1 if aborted due to no vote, 
+//    1 if aborted due to no vote,
 //    3 if aborted due to prepare failure,
 //   <0 if commit error or transaction has ended
 
 int LocalTransaction::tryCommit(Timestamp *retcommitts){
+  printf("%s\n", "Using Local 2PC protocol");
+  fflush(stdout);
   int outcome;
   Timestamp committs;
   int res;
@@ -642,7 +644,7 @@ int LocalTransaction::abort(void){
 //
 //  rpcdata = new FullReadRPCData;
 //  rpcdata->data = new FullReadRPCParm;
-//  rpcdata->freedata = true; 
+//  rpcdata->freedata = true;
 //
 //  // fill out RPC parameters
 //  rpcdata->data->tid = Id;
@@ -717,7 +719,7 @@ int LocalTransaction::writeSuperValue(COid coid, SuperValue *sv){
 
   rpcdata = new FullWriteRPCData;
   rpcdata->data = new FullWriteRPCParm;
-  rpcdata->freedata = true; 
+  rpcdata->freedata = true;
 
   FullWriteRPCParm *fp = rpcdata->data; // for convenience
 
@@ -802,7 +804,7 @@ int LocalTransaction::listAdd(COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
   if ((flags&1) && !(vbuf->u.raw->Attrs[DTREENODE_ATTRIB_FLAGS] &
                      DTREENODE_FLAG_LEAF))
     return GAIAERR_CELL_OUTRANGE;
-  
+
   if (flags & 1){
     if (vbuf->u.raw->Ncells >= 1){
       int matches;
@@ -843,7 +845,7 @@ int LocalTransaction::listAdd(COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
   respstatus = rpcresp->data->status;
 
   if (respstatus == GAIAERR_CELL_OUTRANGE) return respstatus;
-  
+
   if (respstatus) State=-2; // mark transaction as aborted due to I/O error
   else {
     // insert into a cell and store it in txcache
@@ -898,7 +900,7 @@ int LocalTransaction::listDelRange(COid coid, u8 intervalType, ListCell *cell1,
     assert(tcel);
     vbuf = tcel->vbuf; // use vbuf in cache
   }
-  
+
   hasWrites = true;
 
   rpcdata = new ListDelRangeRPCData;
@@ -1009,8 +1011,8 @@ int LocalTransaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
   rpcdata->data->cid = coid.cid;
   rpcdata->data->oid = coid.oid;
   rpcdata->data->level = currlevel;
-  rpcdata->data->attrid = attrid;  
-  rpcdata->data->attrvalue = attrvalue; 
+  rpcdata->data->attrid = attrid;
+  rpcdata->data->attrvalue = attrvalue;
 
   rpcresp = (AttrSetRPCRespData *) attrsetRpc(rpcdata);
   delete rpcdata;
@@ -1029,7 +1031,7 @@ int LocalTransaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
       vbuf = new Valbuf(*vbuf); // copy vbuf
       vbufincache = 0; // this new vbuf is not in cache, store it below
     }
-    
+
     vbuf->u.raw->Attrs[attrid] = attrvalue;
     if (!vbufincache)
       txCache.setCache(coid, currlevel, vbuf);
@@ -1038,4 +1040,3 @@ int LocalTransaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
   delete rpcresp;
   return respstatus;
 }
-

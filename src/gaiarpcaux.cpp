@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -52,14 +52,14 @@
 
 // -------------------------------- WRITE RPC ----------------------------------
 
-int WriteRPCData::marshall(iovec *bufs, int maxbufs){ 
+int WriteRPCData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1+niovs);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(WriteRPCParm);
   memcpy(bufs+1, iov, sizeof(iovec) * niovs);
   return niovs+1;
 }
-    
+
 void WriteRPCData::demarshall(char *buf){
   data = (WriteRPCParm*) buf;
 
@@ -72,31 +72,31 @@ void WriteRPCData::demarshall(char *buf){
   iov->iov_len = data->len;
 }
 
-int WriteRPCRespData::marshall(iovec *bufs, int maxbufs){ 
+int WriteRPCRespData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(WriteRPCResp);
   return 1;
 }
-    
+
 void WriteRPCRespData::demarshall(char *buf){
   data = (WriteRPCResp*) buf;
 }
 
 // --------------------------------- READ RPC ----------------------------------
 
-int ReadRPCData::marshall(iovec *bufs, int maxbufs){ 
+int ReadRPCData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(ReadRPCParm);
   return 1;
 }
-    
+
 void ReadRPCData::demarshall(char *buf){
   data = (ReadRPCParm*) buf;
 }
 
-int ReadRPCRespData::marshall(iovec *bufs, int maxbufs){ 
+int ReadRPCRespData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 2);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(ReadRPCResp);
@@ -104,7 +104,7 @@ int ReadRPCRespData::marshall(iovec *bufs, int maxbufs){
   bufs[1].iov_len = data->len;
   return 2;
 }
-    
+
 void ReadRPCRespData::demarshall(char *buf){
   data = (ReadRPCResp*) buf;
   data->buf = buf + sizeof(ReadRPCResp); // Note: if changing this, change
@@ -127,7 +127,7 @@ char *ReadRPCRespData::clientAllocReceiveBuffer(int size){
 
 // -------------------------------- PREPARE RPC --------------------------------
 
-int PrepareRPCData::marshall(iovec *bufs, int maxbufs){ 
+int PrepareRPCData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   int nbufs=0;
   bufs[nbufs].iov_base = (char*) data;
@@ -152,61 +152,85 @@ void PrepareRPCData::demarshall(char *buf){
   data->readset = (COid*)(data->piggy_buf + data->piggy_len);
 }
 
-int PrepareRPCRespData::marshall(iovec *bufs, int maxbufs){ 
+int PrepareRPCRespData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(PrepareRPCResp);
   return 1;
 }
-    
+
 void PrepareRPCRespData::demarshall(char *buf){
   data = (PrepareRPCResp*) buf;
 }
 
 // -------------------------------- COMMIT RPC ---------------------------------
 
-int CommitRPCData::marshall(iovec *bufs, int maxbufs){ 
+int CommitRPCData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(CommitRPCParm);
   return 1;
 }
-    
+
 void CommitRPCData::demarshall(char *buf){
   data = (CommitRPCParm*) buf;
 }
 
-int CommitRPCRespData::marshall(iovec *bufs, int maxbufs){ 
+int CommitRPCRespData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(CommitRPCResp);
   return 1;
 }
-    
+
 void CommitRPCRespData::demarshall(char *buf){
   data = (CommitRPCResp*) buf;
 }
 
+// -------------------------------- INBAC RPC ----------------------------------
+
+int InbacRPCData::marshall(iovec *bufs, int maxbufs){
+  assert(maxbufs >= 1);
+  bufs[0].iov_base = (char*) data;
+  bufs[0].iov_len = sizeof(InbacRPCParm);
+  return 1;
+}
+
+void InbacRPCData::demarshall(char *buf){
+  data = (InbacRPCParm*) buf;
+}
+
+int InbacRPCRespData::marshall(iovec *bufs, int maxbufs){
+  assert(maxbufs >= 1);
+  bufs[0].iov_base = (char*) data;
+  bufs[0].iov_len = sizeof(InbacRPCResp);
+  return 1;
+}
+
+void InbacRPCRespData::demarshall(char *buf){
+  data = (InbacRPCResp*) buf;
+}
+
 // ------------------------------- SUBTRANS RPC --------------------------------
 
-int SubtransRPCData::marshall(iovec *bufs, int maxbufs){ 
+int SubtransRPCData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(SubtransRPCParm);
   return 1;
 }
-    
+
 void SubtransRPCData::demarshall(char *buf){
   data = (SubtransRPCParm*) buf;
 }
 
-int SubtransRPCRespData::marshall(iovec *bufs, int maxbufs){ 
+int SubtransRPCRespData::marshall(iovec *bufs, int maxbufs){
   assert(maxbufs >= 1);
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(SubtransRPCResp);
   return 1;
 }
-    
+
 void SubtransRPCRespData::demarshall(char *buf){
   data = (SubtransRPCResp*) buf;
 }
@@ -237,14 +261,14 @@ static u8 EncodeCollSeqAsByte(CollSeq *cs){
 
 // do the reverse conversion
 static CollSeq *DecodeByteAsCollSeq(u8 b){
-  static CollSeq CollSeqs[] = 
+  static CollSeq CollSeqs[] =
     {{(char*)"BINARY", SQLITE_UTF8,    SQLITE_COLL_BINARY, 0, binCollFunc, 0},
       {(char*)"BINARY", SQLITE_UTF16BE, SQLITE_COLL_BINARY, 0, binCollFunc, 0},
       {(char*)"BINARY", SQLITE_UTF16LE, SQLITE_COLL_BINARY, 0, binCollFunc, 0},
       {(char*)"RTRIM", SQLITE_UTF8, SQLITE_COLL_USER, (void*)1, binCollFunc, 0},
       {(char*)"NOCASE", SQLITE_UTF8, SQLITE_COLL_NOCASE, 0,
                         nocaseCollatingFunc, 0}};
- 
+
   assert(1 <= b && b <= 5);
   return &CollSeqs[b-1];
 }
@@ -263,7 +287,7 @@ struct RcKeyInfoSerialize {
 // The RcKeyInfo is serialized as follows:
 //   [haskey]    whether there is a key. If 0, this indicates a null RcKeyInfo
 //               object and the serialization ends here.
-//   [KeyInfoSerialize struct] 
+//   [KeyInfoSerialize struct]
 //   [sortorder byte array with KeyInfoSerialize.nsortorder entries, possibly 0]
 //   [coll byte array with KeyInfoSerialize.ncoll entries, possibly 0]
 // The ncoll byte array has a byte per collating sequence value. The map is
@@ -291,12 +315,12 @@ int marshall_keyinfo(Ptr<RcKeyInfo> prki, iovec *bufs, int maxbufs,
   assert(ptr);
   *(int*)ptr = 1;
   ptr += sizeof(int);
-  
+
   // marshall KeyInfoSerialize part
   kis = (RcKeyInfoSerialize*) ptr;
   kis->enc = prki->enc;
   // if aSortOrder is non-null, nField indicates its size
-  kis->nsortorder = prki->aSortOrder ? prki->nField : 0; 
+  kis->nsortorder = prki->aSortOrder ? prki->nField : 0;
   kis->ncoll = (u8)prki->nField;
   // append entries in aSortOrder (if it is non-null)
   ptr += sizeof(RcKeyInfoSerialize);
@@ -382,7 +406,7 @@ Ptr<RcKeyInfo> demarshall_keyinfo(char **buf){
   ptr += sizeof(RcKeyInfoSerialize);
 
   // fill out aSortOrder if present
-  if (kis->nsortorder){ 
+  if (kis->nsortorder){
     // copy sortorder array
     // where to copy: after RcKeyInfo and its array of CollSeq pointers
     char *copydest = (char*)&*prki + sizeof(RcKeyInfo) +
@@ -590,7 +614,7 @@ int FullReadRPCData::marshall(iovec *bufs, int maxbufs){
     ++nbufs;
   }
   return nbufs;
-  
+
 }
 
 void FullReadRPCData::demarshall(char *buf){
@@ -614,7 +638,7 @@ void FullReadRPCData::demarshall(char *buf){
 
 FullReadRPCRespData::~FullReadRPCRespData(){
   if (deletecelloids) delete [] deletecelloids;
-  if (freedata && data) delete data; 
+  if (freedata && data) delete data;
   if (twsvi) delete twsvi;
   if (tmpprkiserializebuf) free(tmpprkiserializebuf);
 }
@@ -705,11 +729,11 @@ char *ListCellsToCelloids(SkipListBK<ListCellPlus,int> &cells, int &ncelloids,
   int len;
   char *buf, *p;
   int ncells=0;
-  
+
   // first find length of listcells to determine length of buffer to allocate
   len = ListCellsSize(cells);
   ncells = cells.getNitems();
-  
+
   p = buf = new char[len];
   // now iterate to serialize
   for (ptr = cells.getFirst(); ptr != cells.getLast();

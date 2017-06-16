@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -108,11 +108,11 @@
 
 // KEY-VALUE AND TRANSACTION OPTIONS -----------------------------------------
 
-#define GAIA_WRITE_ON_PREPARE
+//#define GAIA_WRITE_ON_PREPARE
 // If defined, enables the optimization to piggyback small writes on
 // prepare phase of transaction
 
-#define GAIA_WRITE_ON_PREPARE_MAX_BYTES 4096
+//#define GAIA_WRITE_ON_PREPARE_MAX_BYTES 4096
 // Max # of bytes to piggyback on prepare phase if GAIA_WRITE_ON_PREPARE is set
 
 #define PENDINGTX_HASHTABLE_SIZE 101
@@ -300,3 +300,13 @@
 #endif
 
 #endif
+
+#define INBAC_PROTOCOL
+// If set, use INBAC as commit protocol for non-local transactions
+// otherwise, use two-phase commit (2PC)
+
+#define MSG_DELAY 100
+// Sets the message delay used for INBAC protocol
+
+#define MAX_NB_CRASHED 1
+// Sets the max number of allowed crashes, used for INBAC protocol

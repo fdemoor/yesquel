@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -94,7 +94,7 @@ int Transaction::start(){
   // obtain a new timestamp from local clock (assumes synchronized clocks)
   StartTs.setNew();
   Id.setNew();
-  txCache.clear();  
+  txCache.clear();
   State = 0;  // valid
   hasWrites = false;
   hasWritesCachable = false;
@@ -144,7 +144,7 @@ int Transaction::writev(COid coid, int nbufs, iovec *bufs){
   int totlen;
 
   Sc->Od->GetServerId(coid, server);
-  
+
   if (State) return GAIAERR_TX_ENDED;
   // add server index to set of servers participating in transaction
   hasWrites = true;
@@ -155,7 +155,7 @@ int Transaction::writev(COid coid, int nbufs, iovec *bufs){
 #endif
 
   totlen = ioveclen(bufs, nbufs);
-  
+
 #ifdef GAIA_WRITE_ON_PREPARE
   if (piggy_len == -1){ // note that we should not piggy if piggy_len==-2
     // there's room for write piggyback
@@ -196,7 +196,7 @@ int Transaction::writev(COid coid, int nbufs, iovec *bufs){
   rpcdata->niovs=nbufs;
   rpcdata->iov = new iovec[nbufs];
   for (int i=0; i < nbufs; ++i){
-    rpcdata->iov[i] = bufs[i]; 
+    rpcdata->iov[i] = bufs[i];
   }
   rpcdata->data->len = totlen;  // total length
 
@@ -215,10 +215,10 @@ int Transaction::writev(COid coid, int nbufs, iovec *bufs){
   Sc->CCache->report(server.serverno, rpcresp.data->versionNoForCache,
                      rpcresp.data->tsForCache, rpcresp.data->reserveTsForCache);
 #endif
-  
+
   respstatus = rpcresp.data->status;
   free(resp);
-  
+
  skiprpc:
   // record written data
   // create a private copy of the data
@@ -230,7 +230,7 @@ int Transaction::writev(COid coid, int nbufs, iovec *bufs){
   vb->readTs.setIllegal();
   vb->len = totlen;
   vb->u.buf = Transaction::allocReadBuf(totlen);
-  iovecmemcpy(vb->u.buf, bufs, nbufs); 
+  iovecmemcpy(vb->u.buf, bufs, nbufs);
 
   Ptr<Valbuf> buf = vb;
   txCache.setCache(coid, currlevel, buf);
@@ -271,7 +271,7 @@ int Transaction::put3(COid coid, char *data1, int len1, char *data2, int len2,
 // Try to read data locally using txCache from transaction.
 // Returns a buffer from the tx cache, which caller should not change.
 // typ: 0 for value, 1 for supervalue
-// Returns:       0 = nothing read, 
+// Returns:       0 = nothing read,
 //                1 = all data read
 //                GAIAERR_TX_ENDED = cannot read because transaction is aborted
 //                GAIAERR_WRONG_TYPE = wrong type
@@ -299,7 +299,7 @@ int Transaction::vget(COid coid, Ptr<Valbuf> &buf){
   char *resp;
   int respstatus=0;
 
-  Valbuf *vbuf;  
+  Valbuf *vbuf;
   int res;
 
   Sc->Od->GetServerId(coid, server);
@@ -315,7 +315,7 @@ int Transaction::vget(COid coid, Ptr<Valbuf> &buf){
 
 #ifdef GAIA_OCC
   // add server index to set of servers participating in transaction
-  Servers.insert(server); 
+  Servers.insert(server);
   ReadSet.insert(coid);
 #endif
 
@@ -333,7 +333,7 @@ int Transaction::vget(COid coid, Ptr<Valbuf> &buf){
 
   rpcdata = new ReadRPCData;
   rpcdata->data = new ReadRPCParm;
-  rpcdata->freedata = true; 
+  rpcdata->freedata = true;
 
   // fill out parameters
   rpcdata->data->tid = Id;
@@ -358,7 +358,7 @@ int Transaction::vget(COid coid, Ptr<Valbuf> &buf){
   Sc->CCache->report(server.serverno, rpcresp.data->versionNoForCache,
                      rpcresp.data->tsForCache, rpcresp.data->reserveTsForCache);
 #endif
-  
+
   respstatus = rpcresp.data->status;
   if (respstatus){ free(resp); buf = 0; return respstatus; }
 
@@ -408,9 +408,9 @@ int Transaction::vsuperget(COid coid, Ptr<Valbuf> &buf, ListCell *cell,
   int respstatus;
   int res;
 
-  Sc->Od->GetServerId(coid, server);  
+  Sc->Od->GetServerId(coid, server);
   if (State){ buf = 0; return GAIAERR_TX_ENDED; }
-  
+
   reslocalread = tryLocalRead(coid, buf, 1);
   if (reslocalread < 0) return reslocalread;
   if (reslocalread == 1){
@@ -420,13 +420,13 @@ int Transaction::vsuperget(COid coid, Ptr<Valbuf> &buf, ListCell *cell,
 
 #ifdef GAIA_OCC
   // add server index to set of servers participating in transaction
-  Servers.insert(server); 
+  Servers.insert(server);
   ReadSet.insert(coid);
 #endif
 
   rpcdata = new FullReadRPCData;
   rpcdata->data = new FullReadRPCParm;
-  rpcdata->freedata = true; 
+  rpcdata->freedata = true;
 
   // fill out parameters
   rpcdata->data->tid = Id;
@@ -459,7 +459,7 @@ int Transaction::vsuperget(COid coid, Ptr<Valbuf> &buf, ListCell *cell,
   Sc->CCache->report(server.serverno, rpcresp.data->versionNoForCache,
                      rpcresp.data->tsForCache, rpcresp.data->reserveTsForCache);
 #endif
-  
+
   respstatus = rpcresp.data->status;
   if (respstatus){ free(resp); buf = 0; return respstatus; }
 
@@ -579,7 +579,7 @@ int Transaction::auxprepare(Timestamp &chosents, int &hascommitted){
 
 #ifdef GAIA_WRITE_ON_PREPARE
   if (piggy_buf) serverset->insert(piggy_server);
-#endif  
+#endif
 
   //committs.setNew();
   //if (Timestamp::cmp(committs, StartTs) < 0)
@@ -632,7 +632,7 @@ int Transaction::auxprepare(Timestamp &chosents, int &hascommitted){
     rpcdata->data->piggy_oid = 0;
     rpcdata->data->piggy_len = -1;
     rpcdata->data->piggy_buf = 0;
-#endif    
+#endif
 
 #ifdef GAIA_OCC
     // fill up the readset parameter
@@ -660,7 +660,7 @@ int Transaction::auxprepare(Timestamp &chosents, int &hascommitted){
 
     Sc->Rpcc->asyncRPC(server.ipport, PREPARE_RPCNO,
                        FLAG_HID(TID_TO_RPCHASHID(Id)), rpcdata,
-                       auxpreparecallback, pcd); 
+                       auxpreparecallback, pcd);
   }
 
   decision = 0; // commit decision
@@ -674,7 +674,7 @@ int Transaction::auxprepare(Timestamp &chosents, int &hascommitted){
                          pcd->data.tsForCache, pcd->data.reserveTsForCache);
     }
 #endif
-    
+
     if (pcd->data.vote){   // did not get response or got abort vote
       if (decision < 3){
         if (pcd->data.vote < 0) decision = 3; // error getting some vote
@@ -793,7 +793,7 @@ int Transaction::abortSubtrans(int level){
       piggy_len = -2;
       piggy_level = 0;
     }
-      
+
     txCache.abortLevel(level); // make changes to tx cache
     if (level < 0) level = 0;
     currlevel = level;
@@ -822,11 +822,166 @@ int Transaction::releaseSubtrans(int level){
 // try to commit
 // Returns
 //    0 if committed,
-//    1 if aborted due to no vote, 
+//    1 if aborted due to no vote,
 //    3 if aborted due to prepare failure,
 //   <0 if commit error or transaction has ended
 
-int Transaction::tryCommit(Timestamp *retcommitts){
+int Transaction::tryCommit(Timestamp *retcommitts) {
+  int outcome;
+#ifdef INBAC_PROTOCOL
+  outcome = tryCommitINBAC(retcommitts);
+  printf("%s\n", "Using INBAC protocol");
+#else
+  outcome = tryCommit2PC(retcommitts);
+  printf("%s\n", "Using 2PC protocol");
+#endif
+  fflush(stdout);
+  return outcome;
+}
+
+//---------------------------- INBAC ---------------------------------
+
+// static method
+void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
+  InbacCallbackData *icd = (InbacCallbackData*) callbackdata;
+  InbacRPCRespData rpcresp;
+  if (data){
+    rpcresp.demarshall(data);
+    icd->data = *rpcresp.data;
+  } else {
+    icd->data.decision = -1;   // indicates an error
+  }
+  icd->sem.signal();
+  return; // free buffer
+}
+
+// Start INBAC commit protocol
+// Returns
+//    0 if committed,
+//    1 if aborted due to no vote,
+//   <0 if commit error or transaction has ended
+int Transaction::auxinbac(Timestamp committs) {
+
+  IPPortServerno server;
+  SetNode<IPPortServerno> *it;
+  InbacRPCData *rpcdata;
+  InbacCallbackData *icd;
+  LinkList<InbacCallbackData> icdlist(true);
+  int outcome;
+  Set<IPPortServerno> *serverset;
+  int hascommitted;
+
+  serverset = &Servers;
+
+#ifdef GAIA_WRITE_ON_PREPARE
+  if (piggy_buf) serverset->insert(piggy_server);
+#endif
+
+#ifndef DISABLE_ONE_PHASE_COMMIT
+  hascommitted = (serverset->getNitems()==1 ? 1 : 0) // tx writes to 1 item
+                        && !hasWritesCachable;   // and it is not cachable item
+#else
+  hascommitted = 0;
+#endif
+
+  for (it = serverset->getFirst(); it != serverset->getLast();
+       it = serverset->getNext(it)){
+    server = it->key;
+
+    rpcdata = new InbacRPCData;
+    rpcdata->data = new InbacRPCParm;
+    rpcdata->deletedata = true;
+
+    // fill out parameters
+    rpcdata->data->tid = Id;
+    rpcdata->data->committs = committs;
+    rpcdata->data->onephasecommit = hascommitted;
+
+    rpcdata->data->piggy_cid = 0;
+    rpcdata->data->piggy_oid = 0;
+    rpcdata->data->piggy_len = -1;
+    rpcdata->data->piggy_buf = 0;
+
+    rpcdata->deletereadset = false; // nothing to delete
+    rpcdata->data->readset_len = 0;
+    rpcdata->data->readset = 0;
+
+    rpcdata->data->servers = *serverset;
+    rpcdata->data->no = server;
+
+    icd = new InbacCallbackData;
+    icd->serverno = server.serverno;
+    icdlist.pushTail(icd);
+
+    Sc->Rpcc->asyncRPC(server.ipport, INBAC_RPCNO,
+                       FLAG_HID(TID_TO_RPCHASHID(Id)), rpcdata,
+                       auxinbaccallback, icd);
+  }
+
+  // Wait until at least one node ended the protocol
+  icd = icdlist.getFirst();
+  int done = 1;
+  while (done) {
+    if (!(icd->sem.wait(MSG_DELAY / serverset->getNitems()))) {
+      done = 0;
+    }
+    if (icd != icdlist.getLast()) {
+      icd = icdlist.getNext(icd);
+    } else {
+      icd = icdlist.getFirst();
+    }
+  }
+
+  outcome = icd->data.decision;
+  return outcome;
+
+}
+
+// try to commit using INBAC protocol
+// Returns
+//    0 if committed,
+//    1 if aborted due to no vote,
+//    3 if aborted due to prepare failure,
+//   <0 if commit error or transaction has ended
+
+int Transaction::tryCommitINBAC(Timestamp *retcommitts) {
+  int outcome;
+  Timestamp committs;
+  committs = StartTs;
+
+  if (State) return GAIAERR_TX_ENDED;
+
+#ifdef GAIA_OCC
+  if (!hasWrites && ReadSet.getNitems() <= 1) return 0; // nothing to commit
+#else
+  if (!hasWrites) return 0; // nothing to commit
+#endif
+
+  outcome = auxinbac(committs);
+  Timestamp::catchup(committs);
+
+  if (outcome==0){
+    if (retcommitts) *retcommitts = committs; // if requested, return commit
+                                              // timestamp
+    // update lastcommitts
+    //if (lastcommitts < committs.getd1()) lastcommitts = committs.getd1();
+  }
+
+  State=-1;  // transaction now invalid
+
+  // clear txCache
+  txCache.clear();
+  return outcome;
+}
+
+// try to commit using 2PC protocol
+// Returns
+//    0 if committed,
+//    1 if aborted due to no vote,
+//    3 if aborted due to prepare failure,
+//   <0 if commit error or transaction has ended
+
+int Transaction::tryCommit2PC(Timestamp *retcommitts){
   int outcome;
   Timestamp committs, waitingts;
   int hascommitted;
@@ -854,7 +1009,7 @@ int Transaction::tryCommit(Timestamp *retcommitts){
     }
     else Timestamp::catchup(committs);
 #else
-    Timestamp::catchup(committs);    
+    Timestamp::catchup(committs);
 #endif
   }
 
@@ -981,7 +1136,7 @@ int Transaction::auxsubtrans(int level, int action){
 //
 //  rpcdata = new FullReadRPCData;
 //  rpcdata->data = new FullReadRPCParm;
-//  rpcdata->freedata = true; 
+//  rpcdata->freedata = true;
 //
 //  // fill out RPC parameters
 //  rpcdata->data->tid = Id;
@@ -1064,7 +1219,7 @@ int Transaction::writeSuperValue(COid coid, SuperValue *sv){
 
   rpcdata = new FullWriteRPCData;
   rpcdata->data = new FullWriteRPCParm;
-  rpcdata->freedata = true; 
+  rpcdata->freedata = true;
 
   FullWriteRPCParm *fp = rpcdata->data; // for convenience
 
@@ -1121,7 +1276,7 @@ int Transaction::writeSuperValue(COid coid, SuperValue *sv){
   Sc->CCache->report(server.serverno, rpcresp.data->versionNoForCache,
                      rpcresp.data->tsForCache, rpcresp.data->reserveTsForCache);
 #endif
-  
+
   respstatus = rpcresp.data->status;
   free(resp);
   // if (respstatus) State = -2;
@@ -1170,7 +1325,7 @@ int Transaction::listAdd(COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
       //if (res == 1) return 0;
     }
   }
-  
+
   // add server index to set of servers participating in transaction
   hasWrites = true;
   Servers.insert(server);
@@ -1208,9 +1363,9 @@ int Transaction::listAdd(COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
 
   respstatus = rpcresp.data->status;
   if (respstatus == GAIAERR_CELL_OUTRANGE){ free(resp); return respstatus; }
-  
+
   if (respstatus) ; // State=-2; // mark transaction as aborted due to I/O error
-  
+
   PendingOpsEntry *poe;
   poe = new PendingOpsEntry;
   poe->type = 0; // add
@@ -1285,13 +1440,13 @@ int Transaction::listDelRange(COid coid, u8 intervalType, ListCell *cell1,
   }
 
   rpcresp.demarshall(resp);
-  
+
 #ifdef GAIA_CLIENT_CONSISTENT_CACHE
   // refresh client cache metadata
   Sc->CCache->report(server.serverno, rpcresp.data->versionNoForCache,
                      rpcresp.data->tsForCache, rpcresp.data->reserveTsForCache);
 #endif
-  
+
   respstatus = rpcresp.data->status;
   free(resp);
 
@@ -1317,7 +1472,7 @@ int Transaction::listDelRange(COid coid, u8 intervalType, ListCell *cell1,
 
   return respstatus;
 }
-  
+
 // adds a cell to a supervalue
 int Transaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
   IPPortServerno server;
@@ -1326,15 +1481,15 @@ int Transaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
   char *resp;
   int respstatus;
   int localread;
-  
+
   Ptr<Valbuf> vbuf;
 
-  Sc->Od->GetServerId(coid, server);  
+  Sc->Od->GetServerId(coid, server);
   if (State) return GAIAERR_TX_ENDED;
 
   localread = tryLocalRead(coid, vbuf, 1);
   if (localread < 0) return localread;
-    
+
   // add server index to set of servers participating in transaction
   hasWrites = true;
   Servers.insert(server);
@@ -1348,8 +1503,8 @@ int Transaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
   rpcdata->data->cid = coid.cid;
   rpcdata->data->oid = coid.oid;
   rpcdata->data->level = currlevel;
-  rpcdata->data->attrid = attrid;  
-  rpcdata->data->attrvalue = attrvalue; 
+  rpcdata->data->attrid = attrid;
+  rpcdata->data->attrvalue = attrvalue;
 
   resp = Sc->Rpcc->syncRPC(server.ipport, ATTRSET_RPCNO,
                            FLAG_HID(TID_TO_RPCHASHID(Id)), rpcdata);
@@ -1382,4 +1537,3 @@ int Transaction::attrSet(COid coid, u32 attrid, u64 attrvalue){
 
   return respstatus;
 }
-
