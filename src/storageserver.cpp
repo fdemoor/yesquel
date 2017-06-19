@@ -1472,6 +1472,11 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
 
+  SetNode<IPPortServerno> *it;
+  for (it = d->data->serverset->getFirst(); it != d->data->serverset->getLast();
+       it = d->data->serverset->getNext(it)) {
+    printf("Server %d\n", it->key.serverno);
+  }
 
   // Actual inbac protocol
   outcome = respPrep->data->vote;

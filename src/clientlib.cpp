@@ -906,8 +906,7 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->readset_len = 0;
     rpcdata->data->readset = 0;
 
-    rpcdata->data->servers = *serverset;
-    rpcdata->data->no = server;
+    rpcdata->data->serverset = serverset;
 
     icd = new InbacCallbackData;
     icd->serverno = server.serverno;
@@ -916,6 +915,7 @@ int Transaction::auxinbac(Timestamp committs) {
     Sc->Rpcc->asyncRPC(server.ipport, INBAC_RPCNO,
                        FLAG_HID(TID_TO_RPCHASHID(Id)), rpcdata,
                        auxinbaccallback, icd);
+
   }
 
   // Wait until at least one node ended the protocol

@@ -393,8 +393,8 @@ struct InbacRPCParm {
   int onephasecommit;     // whether to commit as well as prepare
                           // (used when transaction spans just one server)
 
-  Set<IPPortServerno> servers;  // set of storage servers
-  IPPortServerno no;            // no of server receiving the data
+  Set<IPPortServerno> *serverset; // set of storage servers
+  int nbServers;                  // number of storages servers
 
   // stuff for piggyback write optimization (if GAIA_WRITE_ON_PREPARE enabled)
   Cid piggy_cid;          // piggyback container id

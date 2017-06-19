@@ -80,7 +80,7 @@ private:
 
 public:
 
-  InbacData(InbacRPCParm *param);
+  InbacData(InbacRPCParm *param, IPPort ipport);
   void propose(int vote);
   int getPhase() { return phase; }
   bool hasProposed() { return proposed; }

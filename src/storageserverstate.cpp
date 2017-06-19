@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -63,5 +63,6 @@ StorageServerState::StorageServerState(HostConfig *hc) :
       cDiskStorage(hc->storedir),
       cLogInMemory(&cDiskStorage)
       {
+        ip = hc->ipport;
         cDiskLog.launch();
       }
