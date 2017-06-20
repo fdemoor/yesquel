@@ -196,15 +196,15 @@ int InbacRPCData::marshall(iovec *bufs, int maxbufs){
   bufs[0].iov_base = (char*) data;
   bufs[0].iov_len = sizeof(InbacRPCParm);
 
-  char* raw = (char*) malloc(data->nbServers * sizeof(IPPortServerno*));
+  char* raw = (char*) malloc(data->nbServers * sizeof(IPPortServerno));
   SetNode<IPPortServerno> *it;
   int n = 0;
   for (it = data->serverset->getFirst(); it != data->serverset->getLast();
        it = data->serverset->getNext(it), n++) {
-    memcpy(raw + n * sizeof(IPPortServerno*), &(it->key), sizeof(IPPortServerno*));
+    memcpy(raw + n * sizeof(IPPortServerno), &(it->key), sizeof(IPPortServerno));
   }
   bufs[1].iov_base = raw;
-  bufs[1].iov_len = sizeof(raw);
+  bufs[1].iov_len = data->nbServers * sizeof(IPPortServerno);
 
   return 2;
 }
@@ -215,7 +215,7 @@ void InbacRPCData::demarshall(char *buf){
   Set<IPPortServerno> *servers = new Set<IPPortServerno>;
   int n;
   for (n = 0; n < data->nbServers; n++) {
-    IPPortServerno *port = (IPPortServerno*) (raw + n * sizeof(IPPortServerno*));
+    IPPortServerno *port = (IPPortServerno*) (raw + n * sizeof(IPPortServerno));
     servers->insert(*port);
   }
   data->serverset = servers;
