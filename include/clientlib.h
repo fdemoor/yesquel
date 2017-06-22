@@ -86,6 +86,7 @@ private:
   bool hasWrites;
   bool hasWritesCachable; // whether tx writes to cachable items
   int currlevel;          // current subtransaction level
+  int inbacId;
 
   char *piggy_buf;   // data to be piggybacked
   IPPortServerno piggy_server; // server holding coid to be written

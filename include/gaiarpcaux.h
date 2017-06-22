@@ -38,6 +38,7 @@
 #define _GAIARPCAUX_H
 
 #include <sys/uio.h>
+#include <sstream>
 
 #include "tmalloc.h"
 #include "options.h"
@@ -70,8 +71,9 @@ const int NULL_RPCNO = 0,
           STARTSPLITTER_RPCNO = 13,
           FLUSHFILE_RPCNO = 14,
           LOADFILE_RPCNO = 15,
-          INBAC_RPCNO = 16;
-          // RPC 17 is used by storageserver-splitter.h when STORAGESERVER_SPLITTER is defined (see also splitter-client.h)
+          INBAC_RPCNO = 16,
+          INBACMESSAGE_RPCNO = 17;
+          // RPC 18 is used by storageserver-splitter.h when STORAGESERVER_SPLITTER is defined (see also splitter-client.h)
 
 // error codes
 #define GAIAERR_GENERIC         -1 // generic error code
@@ -392,6 +394,7 @@ struct InbacRPCParm {
   Timestamp committs;    // commit timestamp
   int onephasecommit;     // whether to commit as well as prepare
                           // (used when transaction spans just one server)
+  int inbacId;
 
   Set<IPPortServerno> *serverset; // set of storage servers
   int nbServers;                  // number of storages servers
@@ -431,6 +434,56 @@ public:
   int freedata;
   InbacRPCRespData(){ freedata = 0; }
   ~InbacRPCRespData(){ if (freedata){ delete data; } }
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+struct VotePair {
+  IPPortServerno owner;
+  bool vote;
+  static int cmp(const VotePair &left, const VotePair &right);
+  static const char* toString(VotePair &p);
+};
+
+struct SetPair {
+  IPPortServerno owner;
+  Set<VotePair> set;
+  static int cmp(const SetPair &left, const SetPair &right);
+  static const char* toString(SetPair &p);
+};
+
+struct InbacMessageRPCParm {
+  VotePair vote;
+  Set<VotePair> *votes;
+  IPPortServerno owner;
+  int nbVotes;
+  int type;     // 0: vote, 1: set of votes, 2: help
+  int inbacId;
+};
+
+class InbacMessageRPCData : public Marshallable {
+public:
+  InbacMessageRPCParm *data;
+  int freedata;
+  InbacMessageRPCData()  { freedata = 0; }
+  ~InbacMessageRPCData(){ if (freedata){ delete data; } }
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+struct InbacMessageRPCResp {
+  int type;           // 0: helped, -1:error, else: no callback needed
+  Set<VotePair> *votes;
+  int nbVotes;
+  int inbacId;
+};
+
+class InbacMessageRPCRespData : public Marshallable {
+public:
+  InbacMessageRPCResp *data;
+  int freedata;
+  InbacMessageRPCRespData(){ freedata = 0; }
+  ~InbacMessageRPCRespData(){ if (freedata){ delete data; } }
   int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };

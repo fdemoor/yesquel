@@ -81,6 +81,7 @@ Transaction::Transaction(StorageConfig *sc)
   readsTxCached = 0;
   piggy_buf = 0;
   Sc = sc;
+  inbacId = 0;
   start();
 }
 
@@ -896,6 +897,7 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->tid = Id;
     rpcdata->data->committs = committs;
     rpcdata->data->onephasecommit = hascommitted;
+    rpcdata->data->inbacId = inbacId++;
 
     rpcdata->data->piggy_cid = 0;
     rpcdata->data->piggy_oid = 0;

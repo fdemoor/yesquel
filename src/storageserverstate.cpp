@@ -63,6 +63,7 @@ StorageServerState::StorageServerState(HostConfig *hc) :
       cDiskStorage(hc->storedir),
       cLogInMemory(&cDiskStorage)
       {
-        ip = hc->ipport;
+        Rpcc = hc->Rpcc;
+        ipport = hc->ipport;
         cDiskLog.launch();
       }

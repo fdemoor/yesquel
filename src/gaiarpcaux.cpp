@@ -232,6 +232,118 @@ void InbacRPCRespData::demarshall(char *buf){
   data = (InbacRPCResp*) buf;
 }
 
+int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
+  assert(maxbufs >= 1);
+  int nbBuf = 0;
+
+  bufs[nbBuf].iov_base = (char*) data;
+  bufs[nbBuf].iov_len = sizeof(InbacMessageRPCParm);
+  nbBuf++;
+
+  if (data->type == 1) {
+    data->nbVotes = data->votes->getNitems();
+    char* raw = (char*) malloc(data->nbVotes * sizeof(VotePair));
+    SetNode<VotePair> *it;
+    int n = 0;
+    for (it = data->votes->getFirst(); it != data->votes->getLast();
+         it = data->votes->getNext(it), n++) {
+      memcpy(raw + n * sizeof(VotePair), &(it->key), sizeof(VotePair));
+    }
+    bufs[nbBuf].iov_base = raw;
+    bufs[nbBuf].iov_len = data->nbVotes * sizeof(VotePair);
+    nbBuf++;
+  }
+
+  return nbBuf;
+}
+
+void InbacMessageRPCData::demarshall(char *buf) {
+  data = (InbacMessageRPCParm*) buf;
+  if (data->type == 1) {
+    char* raw = buf + sizeof(InbacMessageRPCParm);
+    Set<VotePair> *votes = new Set<VotePair>;
+    int n;
+    for (n = 0; n < data->nbVotes; n++) {
+      VotePair *pair = (VotePair*) (raw + n * sizeof(VotePair));
+      votes->insert(*pair);
+    }
+    data->votes = votes;
+  }
+}
+
+int InbacMessageRPCRespData::marshall(iovec *bufs, int maxbufs) {
+  assert(maxbufs >= 1);
+  int nbBuf = 0;
+
+  bufs[nbBuf].iov_base = (char*) data;
+  bufs[nbBuf].iov_len = sizeof(InbacMessageRPCResp);
+  nbBuf++;
+
+  if (data->type == 0) {
+    data->nbVotes = data->votes->getNitems();
+    char* raw = (char*) malloc(data->nbVotes * sizeof(VotePair));
+    SetNode<VotePair> *it;
+    int n = 0;
+    for (it = data->votes->getFirst(); it != data->votes->getLast();
+         it = data->votes->getNext(it), n++) {
+      memcpy(raw + n * sizeof(VotePair), &(it->key), sizeof(VotePair));
+    }
+    bufs[nbBuf].iov_base = raw;
+    bufs[nbBuf].iov_len = data->nbVotes * sizeof(VotePair);
+    nbBuf++;
+  }
+
+  return nbBuf;
+}
+
+void InbacMessageRPCRespData::demarshall(char *buf) {
+  data = (InbacMessageRPCResp*) buf;
+  if (data->type == 0) {
+    char* raw = buf + sizeof(InbacMessageRPCResp);
+    Set<VotePair> *votes = new Set<VotePair>;
+    int n;
+    for (n = 0; n < data->nbVotes; n++) {
+      VotePair *pair = (VotePair*) (raw + n * sizeof(VotePair));
+      votes->insert(*pair);
+    }
+    data->votes = votes;
+  }
+}
+
+int VotePair::cmp(const VotePair &left, const VotePair &right) {
+  if ( (left.vote == right.vote) &&
+    IPPortServerno::cmp(left.owner, right.owner) == 0) {
+    return 0;
+  } else { return 1; }
+}
+
+const char* VotePair::toString(VotePair &p) {
+  std::stringstream ss;
+  ss << "<" << p.owner.ipport.ip << ":" << p.owner.ipport.port
+      << "," << p.vote << ">";
+  return ss.str().c_str();
+}
+
+int SetPair::cmp(const SetPair &left, const SetPair &right) {
+  // Very weak comparison, but should be enough
+  if (IPPortServerno::cmp(left.owner, right.owner) == 0) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+const char* SetPair::toString(SetPair &p) {
+  std::stringstream ss;
+  ss << "<" << p.owner.ipport.ip << ":" << p.owner.ipport.port << ",[";
+  SetNode<VotePair> *it;
+  for (it = p.set.getFirst(); it != p.set.getLast(); it = p.set.getNext(it)) {
+    ss << VotePair::toString(it->key) << ",";
+  }
+  ss << "]>";
+  return ss.str().c_str();
+}
+
 // ------------------------------- SUBTRANS RPC --------------------------------
 
 int SubtransRPCData::marshall(iovec *bufs, int maxbufs){

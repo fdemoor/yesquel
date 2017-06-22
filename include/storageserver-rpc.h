@@ -40,6 +40,7 @@
 #include "tcpdatagram.h"
 #include "grpctcp.h"
 #include "task.h"
+#include "inbac.h"
 
 
 // stubs
@@ -60,4 +61,5 @@ int startsplitterRpcStub(RPCTaskInfo *rti);
 int flushfileRpcStub(RPCTaskInfo *rti);
 int loadfileRpcStub(RPCTaskInfo *rti);
 int inbacRpcStub(RPCTaskInfo *rti);
+int inbacmessageRpcStub(RPCTaskInfo *rti);
 #endif

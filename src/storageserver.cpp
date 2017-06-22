@@ -1447,7 +1447,7 @@ Marshallable *loadfileRpc(LoadFileRPCData *d){
 
 Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
-  int outcome;
+  int outcome, vote;
   InbacRPCRespData *resp;
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('i');
@@ -1475,35 +1475,111 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
   SetNode<IPPortServerno> *it;
   for (it = d->data->serverset->getFirst(); it != d->data->serverset->getLast();
        it = d->data->serverset->getNext(it)) {
-    printf("Server %d\n", it->key.serverno);
+    printf("Server %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
   }
+
 
   // Actual inbac protocol
-  outcome = respPrep->data->vote;
+  vote = respPrep->data->vote;
+  outcome = vote;
   //
 
-  printf("Decided to vote %d\n", outcome);
-
-  CommitRPCData *crpcdata = new CommitRPCData;
-  crpcdata->data = new CommitRPCParm;
-  crpcdata->freedata = true;
-
-  // fill out parameters
-  crpcdata->data->tid = d->data->tid;
-  crpcdata->data->committs = d->data->committs;
-  if (Timestamp::cmp(respPrep->data->mincommitts, crpcdata->data->committs) > 0) {
-    crpcdata->data->committs = respPrep->data->mincommitts;
-  }
-  crpcdata->data->committs.addEpsilon();
-  crpcdata->data->commit = outcome;
-
-  CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
+  printf("Decided to vote %d\n", vote);
 
   resp = new InbacRPCRespData;
   resp->data = new InbacRPCResp;
-  resp->data->status = respCom->data->status;
   resp->data->decision = outcome;
   resp->freedata = true;
+
+  if (!rpcdata->data->onephasecommit) {
+
+    InbacData *inbacData = new InbacData(d->data, S->ipport, *(S->Rpcc), d->data->inbacId);
+    inbacData->propose(respPrep->data->vote);
+
+    CommitRPCData *crpcdata = new CommitRPCData;
+    crpcdata->data = new CommitRPCParm;
+    crpcdata->freedata = true;
+
+    crpcdata->data->tid = d->data->tid;
+    crpcdata->data->committs = d->data->committs;
+    if (Timestamp::cmp(respPrep->data->mincommitts, crpcdata->data->committs) > 0) {
+      crpcdata->data->committs = respPrep->data->mincommitts;
+    }
+    crpcdata->data->committs.addEpsilon();
+    crpcdata->data->commit = outcome;
+    CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
+    resp->data->status = respCom->data->status;
+
+  } else {
+
+    printf("One phase commit\n");
+    resp->data->status = respPrep->data->status;
+
+  }
+
+  return resp;
+}
+
+Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
+
+  InbacMessageRPCRespData *resp;
+  resp = new InbacMessageRPCRespData;
+  resp->data = new InbacMessageRPCResp;
+  resp->data->inbacId = d->data->inbacId;
+
+  InbacData *inbacData = InbacData::getInbacData(d->data->inbacId);
+  if (inbacData) {
+
+    switch (d->data->type) {
+
+      case 0: {
+        printf("Received %s\n", VotePair::toString(d->data->vote));
+        resp->data->type = 1;
+        if (inbacData->getPhase() == 0) {
+          int k = inbacData->addVote0(d->data->vote);
+          int i = inbacData->getId();
+          int n = inbacData->getNNodes();
+          if ( (i < MAX_NB_CRASHED && k == n) ||
+                (i == MAX_NB_CRASHED && k == MAX_NB_CRASHED) ) {
+            inbacData->setR1(false);
+            TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
+          }
+        }
+        break;
+
+      } case 1: {
+        SetPair *p = new SetPair;
+        p->owner = d->data->owner;
+        p->set = *(d->data->votes);
+        printf("Received %s\n", SetPair::toString(*p));
+        resp->data->type = 1;
+        inbacData->addVote1(d->data->votes, d->data->owner);
+        inbacData->incrCnt();
+        int n = inbacData->getCnt();
+        if (n == MAX_NB_CRASHED) {
+          inbacData->setR2(false);
+          TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
+        }
+        break;
+
+      } case 2: {
+        if (inbacData->getPhase() == 2 && inbacData->getId() >= MAX_NB_CRASHED) {
+          printf("Received Help request\n");
+          resp->data->type = 0;
+          resp->data->votes = inbacData->getVote0();
+        }
+        break;
+
+      } default: {
+        resp->data->type = -1; // Should not happen
+        break;
+      }
+    }
+
+  } else {
+    resp->data->type = -1;
+  }
+
 
   return resp;
 }

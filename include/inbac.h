@@ -38,39 +38,41 @@
 #ifndef _INBAC_H
 #define _INBAC_H
 
-#include <utility>
-
 #include "ipmisc.h"
+#include "task.h"
 #include "datastruct.h"
 #include "options.h"
 #include "gaiarpcaux.h"
-
-using namespace std;
-
-class VoteCollRPCData : public Marshallable {
-public:
-  Set<pair<IPPortServerno,bool>> *data;
-  int freedata;
-  VoteCollRPCData()  { freedata = 0; data = new Set<pair<IPPortServerno,bool>>; }
-  ~VoteCollRPCData(){ if (freedata){ delete data; } }
-  int marshall(iovec *bufs, int maxbufs);
-  void demarshall(char *buf);
-};
+#include "grpctcp.h"
 
 int inbacTimeoutHandler(void* arg);
+
+struct InbacMessageCallbackData {
+  Semaphore sem; // to wait for response
+  InbacMessageRPCResp data;
+  InbacMessageCallbackData *prev, *next; // linklist stuff
+};
+void inbacmessagecallback(char *data, int len, void *callbackdata);
+
 
 class InbacData {
 
 private:
 
+  Ptr<RPCTcp> Rpcc;
   InbacRPCParm *parm;
   int id;
+  IPPortServerno server;
+
+  bool r1;
+  bool r2;
+
   int phase;
   bool proposed;
   bool decided;
-  VoteCollRPCData *collections0;
-  Set<pair<IPPortServerno,Set<pair<IPPortServerno,bool>>>> *collections1;
-  VoteCollRPCData *collectionHelp;
+  Set<VotePair> *collections0;
+  Set<SetPair> *collections1;
+  Set<VotePair> *collectionHelp;
   bool wait;
   bool val;
   bool decision;
@@ -78,14 +80,43 @@ private:
   int cnt;
   int cntHelp;
 
+  static HashTable<int,InbacData> *inbacDataObjects;
+
+  void timeoutEvent0();
+  void timeoutEvent1();
+
 public:
 
-  InbacData(InbacRPCParm *param, IPPort ipport);
+  int inbacId;
+  InbacData *prev, *next, *sprev, *snext;
+  InbacData() {}
+  InbacData(InbacRPCParm *param, IPPort ipport, Ptr<RPCTcp> rpc, int k);
   void propose(int vote);
+  void timeoutEvent();
   int getPhase() { return phase; }
-  bool hasProposed() { return proposed; }
-  bool hasDecided() { return decided; }
   int getId() { return id; }
+  int getNNodes() { return parm->serverset->getNitems(); }
+  void incrCnt() { cnt++;  }
+  void incrCntHelp() { cntHelp++;  }
+  int getCnt() { return cnt; }
+  int getCntHelp() { return cntHelp; }
+  int addVote0(VotePair vote);
+  int addVote0(Set<VotePair> *votes);
+  Set<VotePair>* getVote0() { return collections0; }
+  void addVote1(Set<VotePair> *set, IPPortServerno owner);
+  int GetKey() { return inbacId; }
+  static InbacData* getInbacData(int key);
+  static void insertInbacData(InbacData *data);
+  static int HashKey(int n) { return n; }
+  static int CompareKey(int a, int b) {
+      if (a < b) { return -1; }
+      else if (a == b) { return 0; }
+      else { return +1; }
+  }
+  bool getR1() { return r1; }
+  bool getR2() { return r2; }
+  void setR1(bool b) { r1 = b; }
+  void setR2(bool b) { r2 = b; }
 
 };
 

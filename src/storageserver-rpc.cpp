@@ -244,7 +244,17 @@ int inbacRpcStub(RPCTaskInfo *rti){
   InbacRPCData d;
   Marshallable *resp;
   d.demarshall(rti->data);
-  resp = inbacRpc(&d, rti->State, (void*) rti);  rti->setResp(resp);
+  resp = inbacRpc(&d, rti->State, (void*) rti);
+  rti->setResp(resp);
+  return SchedulerTaskStateEnding;
+}
+
+int inbacmessageRpcStub(RPCTaskInfo *rti) {
+  InbacMessageRPCData d;
+  Marshallable *resp;
+  d.demarshall(rti->data);
+  resp = inbacMessageRpc(&d);
+  rti->setResp(resp);
   return SchedulerTaskStateEnding;
 }
 

@@ -43,11 +43,13 @@
 #include "pendingtx.h"
 #include "newconfig.h"
 #include "ccache-server.h"
+#include "inbac.h"
 
 class StorageServerState {
 public:
   StorageServerState(HostConfig *hc);
-  IPPort ip;
+  Ptr<RPCTcp> *Rpcc;
+  IPPort ipport;
   DiskLog cDiskLog;
   DiskStorage cDiskStorage;
   LogInMemory cLogInMemory;

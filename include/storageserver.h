@@ -40,6 +40,7 @@
 
 #include "gaiarpcaux.h"
 #include "newconfig.h"
+#include "inbac.h"
 
 // must call before invoking any of the functions below
 void initStorageServer(HostConfig *hc);
@@ -62,6 +63,7 @@ Marshallable *startsplitterRpc(StartSplitterRPCData *d);
 Marshallable *flushfileRpc(FlushFileRPCData *d);
 Marshallable *loadfileRpc(LoadFileRPCData *d);
 Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify);
+Marshallable *inbacMessageRpc(InbacMessageRPCData *d);
 
 // Auxilliary function to be used by server implementation
 // Wake up a task that was deferred, by sending a wake-up message to it

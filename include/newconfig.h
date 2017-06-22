@@ -8,7 +8,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -72,6 +72,7 @@ public:
   char *logfile;   // name of log file
   char *storedir;  // name of directory where objects are stored.
                    // Should end with '/'
+  Ptr<RPCTcp> *Rpcc;
 
   // HashTable stuff
   HostConfig *next, *prev, *snext, *sprev;
@@ -82,6 +83,7 @@ public:
   static int CompareKey(IPPort *i1, IPPort *i2){
     return memcmp((void*)i1, (void*)i2, sizeof(IPPort));
   }
+  void setRPC(Ptr<RPCTcp> *ptr) { Rpcc = ptr; }
 };
 
 class ConfigState {
@@ -90,22 +92,22 @@ private:
   list<int> errRepeatedGroups;
   list<pair<IPPort,char*>> errRepeatedIPPort;
   list<int> errRepeatedServer;
-  
+
 public:
   HashTableBK<IPPort,HostConfig> Hosts;
   HashTable<int,ServerHT> Servers;
   int Nservers;     // number of servers
-  
+
   unsigned PreferredIP;
   unsigned PreferredIPMask;
   int Ngroups;
   int StripeMethod; // method used for striping
   int StripeParm;   // parameter for method used for striping
-  
+
   void addHost(HostConfig *toadd);
   void addServer(int server, char *hostname, int port, u32 preferip,
                  u32 prefermask);
-  
+
   void setNgroups(int ngroups){ Ngroups = ngroups; }
   void setStripeMethod(int value){ StripeMethod = value; }
   void setStripeParm(int value){ StripeParm = value; }
@@ -125,7 +127,7 @@ public:
   }
 
   static ConfigState *ParseConfig(const char *configfilename);
-}; 
+};
 
 extern ConfigState *parser_cs;
 

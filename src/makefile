@@ -4,9 +4,9 @@ TARGET = storageserver shell callserver test-sql-simple yesquel.a
 
 CLIENTLIB_SRC = clientdir.cpp clientlib.cpp clientlib-common.cpp supervalue.cpp valbuf.cpp ccache.cpp
 
-CLIENTLIBAUX_SRC = config.tab.cpp debug.cpp gaiarpcaux.cpp gaiatypes.cpp grpctcp.cpp ipmisc.cpp lex.yy.cpp newconfig.cpp os.cpp record.cpp scheduler.cpp pendingtx.cpp task.cpp tcpdatagram.cpp tmalloc.cpp util.cpp util-more.cpp
+CLIENTLIBAUX_SRC = config.tab.cpp debug.cpp gaiarpcaux.cpp gaiatypes.cpp grpctcp.cpp ipmisc.cpp lex.yy.cpp newconfig.cpp os.cpp record.cpp scheduler.cpp pendingtx.cpp task.cpp tcpdatagram.cpp tmalloc.cpp util.cpp util-more.cpp inbac.cpp
 
-STORAGESERVER_SRC = storageserver.cpp storageserverstate.cpp storageserver-rpc.cpp diskstorage.cpp logmem.cpp main.cpp pendingtx.cpp disklog.cpp ccache-server.cpp inbac.cpp
+STORAGESERVER_SRC = storageserver.cpp storageserverstate.cpp storageserver-rpc.cpp diskstorage.cpp logmem.cpp main.cpp pendingtx.cpp disklog.cpp ccache-server.cpp
 
 STORAGESERVERLOCALSTORAGE_SRC = clientlib-local.cpp
 
@@ -73,7 +73,7 @@ callserver: callserver.o $(CLIENTLIB_OBJ) $(CLIENTLIBAUX_OBJ)
 shell: shell.o $(YESQUEL_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-test-sql-simple: test-sql-simple.o yesquel.a localstorage.a
+test-sql-simple: test-sql-simple.o yesquel.a localstorage.a inbac.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 

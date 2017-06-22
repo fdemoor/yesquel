@@ -114,11 +114,12 @@ RPCProc RPCProcs[] = {  nullRpcStub,         // RPC 0
                         startsplitterRpcStub,// RPC 13
                         flushfileRpcStub,    // RPC 14
                         loadfileRpcStub,     // RPC 15
-                        inbacRpcStub         // RPC 16
+                        inbacRpcStub,         // RPC 16
+                        inbacmessageRpcStub  // RPC 17
 
 #ifdef STORAGESERVER_SPLITTER
                         ,
-                        ss_getrowidRpcStub   // RPC 17
+                        ss_getrowidRpcStub   // RPC 18
 #endif
                      };
 
@@ -480,6 +481,7 @@ int main(int argc, char **argv)
 
 #endif
 
+  hc->setRPC(&RPCServer);
   initStorageServer(hc);
   int myrealport = hc->port; assert(myrealport != 0);
 
@@ -492,7 +494,7 @@ int main(int argc, char **argv)
     putchar('\n'); fflush(stdout);
   }
 
-  //RPCServer.launch(0);
+  //RPCServer->launch(0);
   mssleep(1000);
 
 #if defined(STORAGESERVER_SPLITTER) && DTREE_SPLIT_LOCATION >= 2

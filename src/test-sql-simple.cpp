@@ -56,7 +56,8 @@ void printres(int res)
   }
 }
 
-#define REPS 10000
+#define REPS 100
+#define NB_TABLES 2
 
 int main(int argc, char **argv)
 {
@@ -65,41 +66,60 @@ int main(int argc, char **argv)
   sqlite3_stmt *stmt;
 
   res=sqlite3_open("TEST", &db); assert(res==0);
+  char s1[1024];
 
-  char *s1 = "create table t1 (a integer primary key, b int);";
-  printf("%s\n", s1);
-  res=sqlite3_prepare(db, s1, -1, &stmt, 0);
-  if (res){
-    printf("Error creating table (table already exists?)\n");
-    exit(1);
+  for (i = 0; i < NB_TABLES; i++) {
+    sprintf(s1, "create table t%d (a integer primary key, b int);", i);
+    printf("%s\n", s1);
+    res=sqlite3_prepare(db, s1, -1, &stmt, 0);
+    if (res){
+      printf("Error creating table (table already exists?)\n");
+      exit(1);
+    }
+    res=sqlite3_step(stmt);
+    printres(res);
+    sqlite3_finalize(stmt);
   }
-  res=sqlite3_step(stmt);
-  printres(res);
-  sqlite3_finalize(stmt);
 
-  s1 = "insert into t1 values (1,2);";
+  sprintf(s1, "begin transaction;");
   printf("%s\n", s1);
   res=sqlite3_prepare(db, s1, -1, &stmt, 0); assert(res==0);
   res=sqlite3_step(stmt);
-  printres(res);
-  sqlite3_finalize(stmt);
+  res=sqlite3_finalize(stmt); assert(res==0);
 
-  s1 = "select * from t1 where a=1;";
-  printf("Executing '%s' %d times\n", s1, REPS);
-
-  for (i=0; i < REPS; ++i){
+  for (i=0; i < 10; ++i){
+    sprintf(s1, "insert into t%d values (%d,%d);", i%NB_TABLES, i, i%5);
+    printf("%s\n", s1);
     res=sqlite3_prepare(db, s1, -1, &stmt, 0); assert(res==0);
     res=sqlite3_step(stmt);
-    res=sqlite3_finalize(stmt); assert(res==0);
+    printres(res);
+    sqlite3_finalize(stmt);
   }
-  printf(" success\n");
 
-  s1 = "drop table t1;";
+  sprintf(s1, "commit transaction;");
   printf("%s\n", s1);
   res=sqlite3_prepare(db, s1, -1, &stmt, 0); assert(res==0);
   res=sqlite3_step(stmt);
-  printres(res);
-  sqlite3_finalize(stmt);
+  res=sqlite3_finalize(stmt); assert(res==0);
+
+  // sprintf(s1, "select * from t1 where b=3;");
+  // printf("Executing '%s' %d times\n", s1, REPS);
+  //
+  // for (i=0; i < REPS; ++i){
+  //   res=sqlite3_prepare(db, s1, -1, &stmt, 0); assert(res==0);
+  //   res=sqlite3_step(stmt);
+  //   res=sqlite3_finalize(stmt); assert(res==0);
+  // }
+  // printf(" success\n");
+
+  for (i = 0; i < NB_TABLES; i++) {
+    sprintf(s1, "drop table t%d;", i);
+    printf("%s\n", s1);
+    res=sqlite3_prepare(db, s1, -1, &stmt, 0); assert(res==0);
+    res=sqlite3_step(stmt);
+    printres(res);
+    sqlite3_finalize(stmt);
+  }
 
   res=sqlite3_close(db); assert(res==0);
   return 0;
