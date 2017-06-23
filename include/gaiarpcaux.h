@@ -452,6 +452,11 @@ struct SetPair {
   static const char* toString(SetPair &p);
 };
 
+struct BoolPair {
+  bool first;
+  bool second;
+};
+
 struct InbacMessageRPCParm {
   VotePair vote;
   Set<VotePair> *votes;

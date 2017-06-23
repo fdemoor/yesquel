@@ -1472,29 +1472,26 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
 
-  SetNode<IPPortServerno> *it;
-  for (it = d->data->serverset->getFirst(); it != d->data->serverset->getLast();
-       it = d->data->serverset->getNext(it)) {
-    printf("Server %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
-  }
+  // SetNode<IPPortServerno> *it;
+  // for (it = d->data->serverset->getFirst(); it != d->data->serverset->getLast();
+  //      it = d->data->serverset->getNext(it)) {
+  //   printf("Server %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
+  // }
 
-
-  // Actual inbac protocol
   vote = respPrep->data->vote;
-  outcome = vote;
-  //
-
-  printf("Decided to vote %d\n", vote);
 
   resp = new InbacRPCRespData;
   resp->data = new InbacRPCResp;
-  resp->data->decision = outcome;
   resp->freedata = true;
 
   if (!rpcdata->data->onephasecommit) {
 
     InbacData *inbacData = new InbacData(d->data, S->ipport, *(S->Rpcc), d->data->inbacId);
     inbacData->propose(respPrep->data->vote);
+
+    //inbacData->sem.wait(INFINITE);
+    //outcome = vote;
+    outcome = inbacData->getDecision();
 
     CommitRPCData *crpcdata = new CommitRPCData;
     crpcdata->data = new CommitRPCParm;
@@ -1510,10 +1507,13 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
     resp->data->status = respCom->data->status;
 
+    resp->data->decision = outcome;
+
   } else {
 
     printf("One phase commit\n");
     resp->data->status = respPrep->data->status;
+    resp->data->decision = vote;
 
   }
 
@@ -1528,12 +1528,13 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
   resp->data->inbacId = d->data->inbacId;
 
   InbacData *inbacData = InbacData::getInbacData(d->data->inbacId);
+
   if (inbacData) {
 
     switch (d->data->type) {
 
       case 0: {
-        printf("Received %s\n", VotePair::toString(d->data->vote));
+        printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, VotePair::toString(d->data->vote));
         resp->data->type = 1;
         if (inbacData->getPhase() == 0) {
           int k = inbacData->addVote0(d->data->vote);
@@ -1551,20 +1552,19 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         SetPair *p = new SetPair;
         p->owner = d->data->owner;
         p->set = *(d->data->votes);
-        printf("Received %s\n", SetPair::toString(*p));
+        printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, SetPair::toString(*p));
         resp->data->type = 1;
         inbacData->addVote1(d->data->votes, d->data->owner);
         inbacData->incrCnt();
         int n = inbacData->getCnt();
         if (n == MAX_NB_CRASHED) {
-          inbacData->setR2(false);
           TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
         }
         break;
 
       } case 2: {
         if (inbacData->getPhase() == 2 && inbacData->getId() >= MAX_NB_CRASHED) {
-          printf("Received Help request\n");
+          printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, "Help");
           resp->data->type = 0;
           resp->data->votes = inbacData->getVote0();
         }
@@ -1577,6 +1577,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
     }
 
   } else {
+    printf("*** Missed a message of type %d\n", d->data->type);
     resp->data->type = -1;
   }
 

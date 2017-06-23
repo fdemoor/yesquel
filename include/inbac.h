@@ -60,18 +60,17 @@ class InbacData {
 private:
 
   Ptr<RPCTcp> Rpcc;
-  InbacRPCParm *parm;
+  Set<IPPortServerno> *serverset;
   int id;
   IPPortServerno server;
 
   bool r1;
-  bool r2;
 
   int phase;
   bool proposed;
   bool decided;
-  Set<VotePair> *collections0;
-  Set<SetPair> *collections1;
+  Set<VotePair> *collection0;
+  Set<SetPair> *collection1;
   Set<VotePair> *collectionHelp;
   bool wait;
   bool val;
@@ -85,8 +84,18 @@ private:
   void timeoutEvent0();
   void timeoutEvent1();
 
+  bool checkAllVotes1();
+  bool checkBackupVotes1();
+  bool getAndVotes1();
+  BoolPair* checkAllExistVotes1();
+  void decide(bool d);
+  void addAllVotes1ToVotes0();
+  bool checkHelpVotes();
+  bool getAndHelpVotes();
+
 public:
 
+  Semaphore sem;
   int inbacId;
   InbacData *prev, *next, *sprev, *snext;
   InbacData() {}
@@ -95,14 +104,16 @@ public:
   void timeoutEvent();
   int getPhase() { return phase; }
   int getId() { return id; }
-  int getNNodes() { return parm->serverset->getNitems(); }
+  bool getDecision() { return decision; }
+  int getNNodes() { return serverset->getNitems(); }
   void incrCnt() { cnt++;  }
   void incrCntHelp() { cntHelp++;  }
   int getCnt() { return cnt; }
   int getCntHelp() { return cntHelp; }
+  bool waiting() { return wait; }
   int addVote0(VotePair vote);
   int addVote0(Set<VotePair> *votes);
-  Set<VotePair>* getVote0() { return collections0; }
+  Set<VotePair>* getVote0() { return collection0; }
   void addVote1(Set<VotePair> *set, IPPortServerno owner);
   int GetKey() { return inbacId; }
   static InbacData* getInbacData(int key);
@@ -113,10 +124,7 @@ public:
       else if (a == b) { return 0; }
       else { return +1; }
   }
-  bool getR1() { return r1; }
-  bool getR2() { return r2; }
   void setR1(bool b) { r1 = b; }
-  void setR2(bool b) { r2 = b; }
 
 };
 

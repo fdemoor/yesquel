@@ -81,7 +81,6 @@ Transaction::Transaction(StorageConfig *sc)
   readsTxCached = 0;
   piggy_buf = 0;
   Sc = sc;
-  inbacId = 0;
   start();
 }
 
@@ -831,6 +830,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
   int outcome;
 #ifdef INBAC_PROTOCOL
   outcome = tryCommitINBAC(retcommitts);
+  inbacId++;
   printf("%s\n", "Using INBAC protocol");
 #else
   outcome = tryCommit2PC(retcommitts);
@@ -842,6 +842,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 
 //---------------------------- INBAC ---------------------------------
 
+int Transaction::inbacId = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
   InbacCallbackData *icd = (InbacCallbackData*) callbackdata;
@@ -897,7 +898,7 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->tid = Id;
     rpcdata->data->committs = committs;
     rpcdata->data->onephasecommit = hascommitted;
-    rpcdata->data->inbacId = inbacId++;
+    rpcdata->data->inbacId = inbacId;
 
     rpcdata->data->piggy_cid = 0;
     rpcdata->data->piggy_oid = 0;

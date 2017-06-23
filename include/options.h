@@ -305,7 +305,7 @@
 // If set, use INBAC as commit protocol for non-local transactions
 // otherwise, use two-phase commit (2PC)
 
-#define MSG_DELAY 100
+#define MSG_DELAY 300
 // Sets the message delay used for INBAC protocol
 
 #define MAX_NB_CRASHED 1

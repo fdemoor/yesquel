@@ -65,6 +65,7 @@ int main(int argc, char **argv)
   int res, i;
   sqlite3_stmt *stmt;
 
+  printf("Start\n");
   res=sqlite3_open("TEST", &db); assert(res==0);
   char s1[1024];
 

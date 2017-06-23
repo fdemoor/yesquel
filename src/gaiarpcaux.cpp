@@ -320,7 +320,7 @@ int VotePair::cmp(const VotePair &left, const VotePair &right) {
 const char* VotePair::toString(VotePair &p) {
   std::stringstream ss;
   ss << "<" << p.owner.ipport.ip << ":" << p.owner.ipport.port
-      << "," << p.vote << ">";
+      << "," << (p.vote ? "true" : "false") << ">";
   return ss.str().c_str();
 }
 
