@@ -63,6 +63,7 @@ private:
   Set<IPPortServerno> *serverset;
   int id;
   IPPortServerno server;
+  CommitRPCData *crpcdata;
 
   bool r1;
 
@@ -88,19 +89,18 @@ private:
   bool checkBackupVotes1();
   bool getAndVotes1();
   BoolPair* checkAllExistVotes1();
-  void decide(bool d);
   void addAllVotes1ToVotes0();
   bool checkHelpVotes();
   bool getAndHelpVotes();
 
 public:
 
-  Semaphore sem;
   int inbacId;
   InbacData *prev, *next, *sprev, *snext;
   InbacData() {}
-  InbacData(InbacRPCParm *param, IPPort ipport, Ptr<RPCTcp> rpc, int k);
+  InbacData(InbacRPCParm *param, IPPort ipport, Ptr<RPCTcp> rpc, int k, CommitRPCData *commitData);
   void propose(int vote);
+  void decide(bool d);
   void timeoutEvent();
   int getPhase() { return phase; }
   int getId() { return id; }
@@ -118,6 +118,7 @@ public:
   int GetKey() { return inbacId; }
   static InbacData* getInbacData(int key);
   static void insertInbacData(InbacData *data);
+  static void removeInbacData(InbacData *data);
   static int HashKey(int n) { return n; }
   static int CompareKey(int a, int b) {
       if (a < b) { return -1; }
@@ -127,5 +128,16 @@ public:
   void setR1(bool b) { r1 = b; }
 
 };
+
+struct InbacDataParm {
+  InbacRPCParm *parm;
+  IPPort ipport;
+  Ptr<RPCTcp> rpc;
+  int k;
+  int vote;
+  CommitRPCData *commitData;
+};
+
+void* startInbac(void *arg_);
 
 #endif

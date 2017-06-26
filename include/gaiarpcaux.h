@@ -72,8 +72,9 @@ const int NULL_RPCNO = 0,
           FLUSHFILE_RPCNO = 14,
           LOADFILE_RPCNO = 15,
           INBAC_RPCNO = 16,
-          INBACMESSAGE_RPCNO = 17;
-          // RPC 18 is used by storageserver-splitter.h when STORAGESERVER_SPLITTER is defined (see also splitter-client.h)
+          INBACMESSAGE_RPCNO = 17,
+          CONSMESSAGE_RPCNO = 18;
+          // RPC 19 is used by storageserver-splitter.h when STORAGESERVER_SPLITTER is defined (see also splitter-client.h)
 
 // error codes
 #define GAIAERR_GENERIC         -1 // generic error code
@@ -489,6 +490,39 @@ public:
   int freedata;
   InbacMessageRPCRespData(){ freedata = 0; }
   ~InbacMessageRPCRespData(){ if (freedata){ delete data; } }
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+// ---------------------------- CONSENSUS RPC ----------------------------------
+
+struct ConsensusMessageRPCParm {
+  int type;     // 0: xact, 1: decision commit, 2: decision abort
+  int consId;
+  int phase;
+};
+
+class ConsensusMessageRPCData : public Marshallable {
+public:
+  ConsensusMessageRPCParm *data;
+  int freedata;
+  ConsensusMessageRPCData()  { freedata = 0; }
+  ~ConsensusMessageRPCData(){ if (freedata){ delete data; } }
+  int marshall(iovec *bufs, int maxbufs);
+  void demarshall(char *buf);
+};
+
+struct ConsensusMessageRPCResp {
+  int type;           // 0: no, 1: yes, -1:error, else: no callback needed;
+  int consId;
+};
+
+class ConsensusMessageRPCRespData : public Marshallable {
+public:
+  ConsensusMessageRPCResp *data;
+  int freedata;
+  ConsensusMessageRPCRespData(){ freedata = 0; }
+  ~ConsensusMessageRPCRespData(){ if (freedata){ delete data; } }
   int marshall(iovec *bufs, int maxbufs);
   void demarshall(char *buf);
 };

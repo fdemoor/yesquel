@@ -258,6 +258,15 @@ int inbacmessageRpcStub(RPCTaskInfo *rti) {
   return SchedulerTaskStateEnding;
 }
 
+int consmessageRpcStub(RPCTaskInfo *rti) {
+  ConsensusMessageRPCData d;
+  Marshallable *resp;
+  d.demarshall(rti->data);
+  resp = consMessageRpc(&d);
+  rti->setResp(resp);
+  return SchedulerTaskStateEnding;
+}
+
 // Auxilliary function to be used by server implementation
 // Wake up a task that was deferred, by sending a wake-up message to it
 void serverAuxWakeDeferred(void *handle){

@@ -71,7 +71,7 @@
 #ifndef STORAGESERVER_SPLITTER
 #define SS_GETROWID_RPCNO 2
 #else
-#define SS_GETROWID_RPCNO 18
+#define SS_GETROWID_RPCNO 19
 #endif
 
 i64 GetRowidFromServer(Cid cid, i64 hint); // get a fresh rowid for a given cid

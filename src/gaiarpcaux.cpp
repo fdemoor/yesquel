@@ -344,6 +344,30 @@ const char* SetPair::toString(SetPair &p) {
   return ss.str().c_str();
 }
 
+// ---------------------------- CONSENSUS RPC ----------------------------------
+
+int ConsensusMessageRPCData::marshall(iovec *bufs, int maxbufs){
+  assert(maxbufs >= 1);
+  bufs[0].iov_base = (char*) data;
+  bufs[0].iov_len = sizeof(ConsensusMessageRPCParm);
+  return 1;
+}
+
+void ConsensusMessageRPCData::demarshall(char *buf){
+  data = (ConsensusMessageRPCParm*) buf;
+}
+
+int ConsensusMessageRPCRespData::marshall(iovec *bufs, int maxbufs){
+  assert(maxbufs >= 1);
+  bufs[0].iov_base = (char*) data;
+  bufs[0].iov_len = sizeof(ConsensusMessageRPCResp);
+  return 1;
+}
+
+void ConsensusMessageRPCRespData::demarshall(char *buf){
+  data = (ConsensusMessageRPCResp*) buf;
+}
+
 // ------------------------------- SUBTRANS RPC --------------------------------
 
 int SubtransRPCData::marshall(iovec *bufs, int maxbufs){

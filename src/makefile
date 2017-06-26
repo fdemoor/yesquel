@@ -4,7 +4,7 @@ TARGET = storageserver shell callserver test-sql-simple yesquel.a
 
 CLIENTLIB_SRC = clientdir.cpp clientlib.cpp clientlib-common.cpp supervalue.cpp valbuf.cpp ccache.cpp
 
-CLIENTLIBAUX_SRC = config.tab.cpp debug.cpp gaiarpcaux.cpp gaiatypes.cpp grpctcp.cpp ipmisc.cpp lex.yy.cpp newconfig.cpp os.cpp record.cpp scheduler.cpp pendingtx.cpp task.cpp tcpdatagram.cpp tmalloc.cpp util.cpp util-more.cpp inbac.cpp
+CLIENTLIBAUX_SRC = config.tab.cpp debug.cpp gaiarpcaux.cpp gaiatypes.cpp grpctcp.cpp ipmisc.cpp lex.yy.cpp newconfig.cpp os.cpp record.cpp scheduler.cpp pendingtx.cpp task.cpp tcpdatagram.cpp tmalloc.cpp util.cpp util-more.cpp
 
 STORAGESERVER_SRC = storageserver.cpp storageserverstate.cpp storageserver-rpc.cpp diskstorage.cpp logmem.cpp main.cpp pendingtx.cpp disklog.cpp ccache-server.cpp
 
@@ -64,16 +64,16 @@ yesquel.a: $(CLIENTLIB_OBJ) $(CLIENTLIBAUX_OBJ) $(SPLITTERCLIENT_OBJ) $(YSCLIENT
 localstorage.a:  $(LOCALSTORAGE_OBJ)
 	ar rcs $@ $^
 
-storageserver: $(SERVER_OBJ)
+storageserver: $(SERVER_OBJ) inbac.o consensus.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 callserver: callserver.o $(CLIENTLIB_OBJ) $(CLIENTLIBAUX_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-shell: shell.o $(YESQUEL_OBJ)
+shell: shell.o $(YESQUEL_OBJ) inbac.o consensus.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-test-sql-simple: test-sql-simple.o yesquel.a localstorage.a inbac.o
+test-sql-simple: test-sql-simple.o yesquel.a localstorage.a inbac.o consensus.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 

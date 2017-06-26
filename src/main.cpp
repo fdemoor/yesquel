@@ -50,6 +50,7 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include <map>
 #include <list>
@@ -114,12 +115,13 @@ RPCProc RPCProcs[] = {  nullRpcStub,         // RPC 0
                         startsplitterRpcStub,// RPC 13
                         flushfileRpcStub,    // RPC 14
                         loadfileRpcStub,     // RPC 15
-                        inbacRpcStub,         // RPC 16
-                        inbacmessageRpcStub  // RPC 17
+                        inbacRpcStub,        // RPC 16
+                        inbacmessageRpcStub,  // RPC 17
+                        consmessageRpcStub   // RPC 18
 
 #ifdef STORAGESERVER_SPLITTER
                         ,
-                        ss_getrowidRpcStub   // RPC 18
+                        ss_getrowidRpcStub   // RPC 19
 #endif
                      };
 
@@ -368,6 +370,8 @@ int main(int argc, char **argv)
   int skipsplitter=0;
   char *loadfilename=0;
   char *logfilename=0;
+
+  srand((unsigned) CONS_PRNG_SEED);
 
   badargs=0;
   while ((c = getopt(argc,argv, "cd:g:l:o:s")) != -1){

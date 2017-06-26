@@ -1447,7 +1447,7 @@ Marshallable *loadfileRpc(LoadFileRPCData *d){
 
 Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
-  int outcome, vote;
+  int vote;
   InbacRPCRespData *resp;
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('i');
@@ -1486,36 +1486,32 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   if (!rpcdata->data->onephasecommit) {
 
-    InbacData *inbacData = new InbacData(d->data, S->ipport, *(S->Rpcc), d->data->inbacId);
-    inbacData->propose(respPrep->data->vote);
-
-    //inbacData->sem.wait(INFINITE);
-    //outcome = vote;
-    outcome = inbacData->getDecision();
+    InbacDataParm *parm = new InbacDataParm;
+    parm->parm = d->data;
+    parm->ipport = S->ipport;
+    parm->rpc = *(S->Rpcc);
+    parm->k = d->data->inbacId;
+    parm->vote = respPrep->data->vote;
 
     CommitRPCData *crpcdata = new CommitRPCData;
     crpcdata->data = new CommitRPCParm;
     crpcdata->freedata = true;
-
     crpcdata->data->tid = d->data->tid;
     crpcdata->data->committs = d->data->committs;
     if (Timestamp::cmp(respPrep->data->mincommitts, crpcdata->data->committs) > 0) {
       crpcdata->data->committs = respPrep->data->mincommitts;
     }
     crpcdata->data->committs.addEpsilon();
-    crpcdata->data->commit = outcome;
+    parm->commitData = crpcdata;
+
+    startInbac((void*) parm);
+
     CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
-    resp->data->status = respCom->data->status;
 
-    resp->data->decision = outcome;
+  } else { printf("One phase commit\n"); }
 
-  } else {
-
-    printf("One phase commit\n");
-    resp->data->status = respPrep->data->status;
-    resp->data->decision = vote;
-
-  }
+  resp->data->status = respPrep->data->status;
+  resp->data->decision = vote;
 
   return resp;
 }
@@ -1534,7 +1530,8 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
     switch (d->data->type) {
 
       case 0: {
-        printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, VotePair::toString(d->data->vote));
+        printf("*** Deliver Event - Inbac Id = %d - %s\n",
+            d->data->inbacId, VotePair::toString(d->data->vote));
         resp->data->type = 1;
         if (inbacData->getPhase() == 0) {
           int k = inbacData->addVote0(d->data->vote);
@@ -1552,7 +1549,8 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         SetPair *p = new SetPair;
         p->owner = d->data->owner;
         p->set = *(d->data->votes);
-        printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, SetPair::toString(*p));
+        printf("*** Deliver Event - Inbac Id = %d - %s\n",
+            d->data->inbacId, SetPair::toString(*p));
         resp->data->type = 1;
         inbacData->addVote1(d->data->votes, d->data->owner);
         inbacData->incrCnt();
@@ -1577,10 +1575,73 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
     }
 
   } else {
-    printf("*** Missed a message of type %d\n", d->data->type);
     resp->data->type = -1;
   }
 
+
+  return resp;
+}
+
+Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
+
+  ConsensusMessageRPCRespData *resp;
+  resp = new ConsensusMessageRPCRespData;
+  resp->data = new ConsensusMessageRPCResp;
+  resp->data->consId = d->data->consId;
+
+  switch (d->data->type) {
+
+    case 0: {
+      printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons xact");
+      ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
+      int vote;
+      if (consData) {
+        if (consData->isTryingLead() && consData->getPhase() == d->data->phase) {
+          vote = 0;
+        } else {
+          vote = 1;
+          consData->resetTryingLead();
+        }
+      } else {
+        vote = 1;
+      }
+      resp->data->type = vote;
+      break;
+
+    } case 1: {
+      printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons commit");
+      ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
+      InbacData *inbacData = InbacData::getInbacData(d->data->consId);
+      if (inbacData) {
+        inbacData->decide(true);
+      }
+      if (consData) {
+        ConsensusData::removeConsensusData(consData);
+        delete consData;
+      }
+      resp->data->type = 2;
+      break;
+
+    } case 2: {
+      printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons abort");
+      ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
+      InbacData *inbacData = InbacData::getInbacData(d->data->consId);
+      if (inbacData) {
+        inbacData->decide(false);
+      }
+      if (consData) {
+        ConsensusData::removeConsensusData(consData);
+        delete consData;
+      }
+      resp->data->type = 2;
+      break;
+
+    } default: {
+      resp->data->type = -1; // Should not happen
+      break;
+    }
+
+  }
 
   return resp;
 }

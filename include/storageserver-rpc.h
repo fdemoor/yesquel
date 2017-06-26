@@ -62,4 +62,5 @@ int flushfileRpcStub(RPCTaskInfo *rti);
 int loadfileRpcStub(RPCTaskInfo *rti);
 int inbacRpcStub(RPCTaskInfo *rti);
 int inbacmessageRpcStub(RPCTaskInfo *rti);
+int consmessageRpcStub(RPCTaskInfo *rti);
 #endif
