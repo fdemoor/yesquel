@@ -65,7 +65,9 @@ private:
   int id;
   IPPortServerno server;
   CommitRPCData *crpcdata;
+  bool canDelete;
 
+  bool started;
   bool vote;
   bool elected;
   bool done;
@@ -87,9 +89,12 @@ public:
   void timeoutEvent();
   void lead();
   void addAck() { nbAcks++; }
-  bool enoughAcks() { return (nbAcks > (getNNodes() -1) / 2); }
+  bool enoughAcks() { return (nbAcks + 1  > (getNNodes() / 2)); }
   bool isTryingLead() { return tryingLead; }
   void resetTryingLead() { tryingLead = false; }
+  void setCanDelete() { canDelete = true; }
+  void tryDelete();
+  bool isStarted() { return started; }
   int getPhase() { return phase; }
   int getNNodes() { return serverset->getNitems(); }
   int GetKey() { return consId; }

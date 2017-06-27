@@ -1448,7 +1448,7 @@ Marshallable *loadfileRpc(LoadFileRPCData *d){
 Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   int vote;
-  InbacRPCRespData *resp;
+  InbacRPCRespData *resp = new InbacRPCRespData;
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('i');
 
@@ -1480,7 +1480,6 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   vote = respPrep->data->vote;
 
-  resp = new InbacRPCRespData;
   resp->data = new InbacRPCResp;
   resp->freedata = true;
 
@@ -1518,8 +1517,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
 Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
 
-  InbacMessageRPCRespData *resp;
-  resp = new InbacMessageRPCRespData;
+  InbacMessageRPCRespData *resp = new InbacMessageRPCRespData;
   resp->data = new InbacMessageRPCResp;
   resp->data->inbacId = d->data->inbacId;
 
@@ -1537,8 +1535,9 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
           int k = inbacData->addVote0(d->data->vote);
           int i = inbacData->getId();
           int n = inbacData->getNNodes();
-          if ( (i < MAX_NB_CRASHED && k == n) ||
-                (i == MAX_NB_CRASHED && k == MAX_NB_CRASHED) ) {
+          int f = inbacData->getF();
+          if ( (i < f && k == n) ||
+                (i == f && k == f) ) {
             inbacData->setR1(false);
             TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
           }
@@ -1555,13 +1554,14 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         inbacData->addVote1(d->data->votes, d->data->owner);
         inbacData->incrCnt();
         int n = inbacData->getCnt();
-        if (n == MAX_NB_CRASHED) {
+        int f = inbacData->getF();
+        if (n == f) {
           TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
         }
         break;
 
       } case 2: {
-        if (inbacData->getPhase() == 2 && inbacData->getId() >= MAX_NB_CRASHED) {
+        if (inbacData->getPhase() == 2 && inbacData->getId() >= inbacData->getF()) {
           printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, "Help");
           resp->data->type = 0;
           resp->data->votes = inbacData->getVote0();
@@ -1584,8 +1584,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
 
 Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
 
-  ConsensusMessageRPCRespData *resp;
-  resp = new ConsensusMessageRPCRespData;
+  ConsensusMessageRPCRespData *resp = new ConsensusMessageRPCRespData;
   resp->data = new ConsensusMessageRPCResp;
   resp->data->consId = d->data->consId;
 
@@ -1616,8 +1615,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
         inbacData->decide(true);
       }
       if (consData) {
-        ConsensusData::removeConsensusData(consData);
-        delete consData;
+        if (!consData->isStarted()) { consData->setCanDelete(); consData->tryDelete(); }
       }
       resp->data->type = 2;
       break;
@@ -1630,8 +1628,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
         inbacData->decide(false);
       }
       if (consData) {
-        ConsensusData::removeConsensusData(consData);
-        delete consData;
+        if (!consData->isStarted()) { consData->setCanDelete(); consData->tryDelete(); }
       }
       resp->data->type = 2;
       break;

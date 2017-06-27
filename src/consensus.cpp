@@ -49,8 +49,10 @@ void consmessagecallback(char *data, int len, void *callbackdata) {
       printf("*** Deliver Event - Consensus Id = %d - %s\n", pcd->data.consId, type == 0 ? "No" : "Yes");
       if (type == 1) {
         ConsensusData *consData = ConsensusData::getConsensusData(pcd->data.consId);
-        consData->addAck();
-        if (consData->enoughAcks()) { consData->lead(); }
+        if (consData) {
+          consData->addAck();
+          if (consData->enoughAcks()) { consData->lead(); }
+        }
       }
     }
   } else {
@@ -63,6 +65,12 @@ void consmessagecallback(char *data, int len, void *callbackdata) {
 int consTimeoutHandler(void* arg) {
   ConsensusData *data = (ConsensusData*) arg;
   if (data) { data->timeoutEvent(); }
+  return 0;
+}
+
+int consDeleteHandler(void* arg) {
+  ConsensusData *data = (ConsensusData*) arg;
+  if (data) { data->tryDelete(); }
   return 0;
 }
 
@@ -84,11 +92,13 @@ void ConsensusData::removeConsensusData(ConsensusData *data) {
 
 ConsensusData::ConsensusData(Set<IPPortServerno> *set, IPPortServerno no, Ptr<RPCTcp> rpc, int k) {
 
+  canDelete = false;
   consId = k;
   Rpcc = rpc;
   serverset = set;
   server = no;
 
+  started = false;
   elected = false;
   done = false;
   tryingLead = false;
@@ -105,6 +115,7 @@ void ConsensusData::setTimeout() {
 }
 
 void ConsensusData::propose(bool v) {
+  started = true;
   vote = v;
   setTimeout();
 }
@@ -119,16 +130,16 @@ void ConsensusData::timeoutEvent() {
 
     SetNode<IPPortServerno> *it;
 
-    ConsensusMessageRPCData *rpcdata = new ConsensusMessageRPCData;
-    rpcdata->data = new ConsensusMessageRPCParm;
-    rpcdata->data->type = 0;
-    rpcdata->data->consId = consId;
-    rpcdata->data->phase = phase;
-    ConsensusMessageCallbackData *imcd = new ConsensusMessageCallbackData;
-
     for (it = serverset->getFirst(); it != serverset->getLast();
          it = serverset->getNext(it)) {
       if (IPPortServerno::cmp(it->key, server) != 0) {
+
+        ConsensusMessageRPCData *rpcdata = new ConsensusMessageRPCData;
+        rpcdata->data = new ConsensusMessageRPCParm;
+        rpcdata->data->type = 0;
+        rpcdata->data->consId = consId;
+        rpcdata->data->phase = phase;
+        ConsensusMessageCallbackData *imcd = new ConsensusMessageCallbackData;
 
         printf("Asking election vote to %u:%u in consensus\n",
             it->key.ipport.ip, it->key.ipport.port);
@@ -138,6 +149,8 @@ void ConsensusData::timeoutEvent() {
       }
     }
     setTimeout();
+  } else {
+    canDelete = true;
   }
 }
 
@@ -148,16 +161,16 @@ void ConsensusData::lead() {
 
     SetNode<IPPortServerno> *it;
 
-    ConsensusMessageRPCData *rpcdata = new ConsensusMessageRPCData;
-    rpcdata->data = new ConsensusMessageRPCParm;
-    rpcdata->data->type = vote ? 1 : 2;
-    rpcdata->data->consId = consId;
-    rpcdata->data->phase = phase;
-    ConsensusMessageCallbackData *imcd = new ConsensusMessageCallbackData;
-
     for (it = serverset->getFirst(); it != serverset->getLast();
          it = serverset->getNext(it)) {
       if (IPPortServerno::cmp(it->key, server) != 0) {
+
+        ConsensusMessageRPCData *rpcdata = new ConsensusMessageRPCData;
+        rpcdata->data = new ConsensusMessageRPCParm;
+        rpcdata->data->type = vote ? 1 : 2;
+        rpcdata->data->consId = consId;
+        rpcdata->data->phase = phase;
+        ConsensusMessageCallbackData *imcd = new ConsensusMessageCallbackData;
 
         printf("Sending election decision %s to %u:%u in consensus\n",
             vote ? "Commit" : "Abort", it->key.ipport.ip, it->key.ipport.port);
@@ -168,7 +181,14 @@ void ConsensusData::lead() {
     }
     InbacData *inbacData = InbacData::getInbacData(consId);
     inbacData->decide(vote);
+  }
+}
+
+void ConsensusData::tryDelete() {
+  if (canDelete) {
     removeConsensusData(this);
     delete this;
+  } else {
+    TaskEventScheduler::AddEvent(tgetThreadNo(), consDeleteHandler, (ConsensusData*) this, 0, MSG_DELAY);
   }
 }

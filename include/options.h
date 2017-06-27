@@ -308,7 +308,7 @@
 #define MSG_DELAY 300
 // Sets the message delay used for INBAC protocol
 
-#define MAX_NB_CRASHED 1
+#define MAX_NB_CRASHED 2
 // Sets the max number of allowed crashes, used for INBAC protocol
 
 #define CONS_PRNG_SEED 15844842

@@ -8,7 +8,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -72,7 +72,7 @@ void RPCTcp::handleMsg(int handlerid, IPPort *dest, u32 req, u32 xid,
     if (orpc && orpc->callback){
       orpc->callback(data, len, orpc->callbackdata);
     }
-    if (orpc){
+    if (orpc){z
       delete orpc->dmsg.data;
       delete orpc;
     }
@@ -80,7 +80,7 @@ void RPCTcp::handleMsg(int handlerid, IPPort *dest, u32 req, u32 xid,
     freeMB(tmb);
   } else { // server stuff
     assert(0 <= handlerid && handlerid < NextServer);
-    
+
     TaskScheduler *ts = tgetTaskScheduler();
     TaskInfo *ti = new RPCTaskInfo(handlerid, (ProgFunc) RPCStart, 0, dest,
                                    req, xid, flags, tmb, data, len);
@@ -179,9 +179,9 @@ int RPCTcp::RPCEnd(RPCTaskInfo *rti){
   // //    since we are caching it
   // // if idempotent then we can free result
   dmsg.freedata = true;
-  
+
   rpctcp->sendMsgFromWorker(&dmsg);
-   
+
   freeMB(rti->tmb); // free incoming RPC data
   return SchedulerTaskStateEnding;
 }
@@ -195,6 +195,3 @@ void RPCTcp::registerNewServer(RPCProc *procs, int nprocs, int portno){
   addServer(Servers[NextServer].handlerid, Servers[NextServer].portno);
   ++NextServer;
 }
-
-
-

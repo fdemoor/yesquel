@@ -44,15 +44,16 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
   if (data){
     rpcresp.demarshall(data);
     pcd->data = *rpcresp.data;
+    printf("*** Deliver Event - Inbac Id = %d - %d\n", pcd->data.inbacId, pcd->data.type);
     if (pcd->data.type == 0) {
       printf("*** Deliver Event - Inbac Id = %d - %s\n", pcd->data.inbacId, "Helped");
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
-      if (inbacData->getId() >= MAX_NB_CRASHED) {
+      if (inbacData->getId() >= inbacData->getF()) {
         inbacData->addVote0(pcd->data.votes);
         inbacData->incrCntHelp();
         if ( (inbacData->getCnt() + inbacData->getCntHelp())
-          >= (inbacData->getNNodes() - MAX_NB_CRASHED)
-          && inbacData->waiting() ) { pcd->sem.signal(); }
+          >= (inbacData->getNNodes() - inbacData->getF())
+          && inbacData->waiting() ) { inbacData->sem->signal(); }
       }
     }
   } else {
@@ -112,6 +113,7 @@ void InbacData::addVote1(Set<VotePair> *set, IPPortServerno owner) {
 
 InbacData::InbacData(InbacRPCParm *param, IPPort p, Ptr<RPCTcp> rpc, int k, CommitRPCData *commitData) {
 
+  sem = new Semaphore;
   crpcdata = commitData;
   inbacId = k;
   Rpcc = rpc;
@@ -127,6 +129,9 @@ InbacData::InbacData(InbacRPCParm *param, IPPort p, Ptr<RPCTcp> rpc, int k, Comm
       break;
     }
   }
+
+  int n = getNNodes();
+  maxNbCrashed = (MAX_NB_CRASHED < n) ? MAX_NB_CRASHED : n - 1;
 
   r1 = true;
 
@@ -157,7 +162,7 @@ void InbacData::propose(int vote) {
   // Send value to backups
   SetNode<IPPortServerno> *it;
   int i = 0;
-  for (it = serverset->getFirst(); i < MAX_NB_CRASHED && it != serverset->getLast();
+  for (it = serverset->getFirst(); i < maxNbCrashed && it != serverset->getLast();
        it = serverset->getNext(it)) {
 
     VotePair *vote = new VotePair;
@@ -185,7 +190,7 @@ void InbacData::propose(int vote) {
   }
 
   // Set timer
-  if (id <= MAX_NB_CRASHED) {
+  if (id <= maxNbCrashed) {
     TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (InbacData*) this, 0, MSG_DELAY);
   } else {
     TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (InbacData*) this, 0, 2 * MSG_DELAY);
@@ -208,19 +213,19 @@ void InbacData::timeoutEvent0() {
   SetNode<IPPortServerno> *it;
   int i = 0;
 
-  InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
-  rpcdata->data = new InbacMessageRPCParm;
-  rpcdata->data->type = 1;
-  rpcdata->data->votes = collection0;
-  rpcdata->data->owner = server;
-  rpcdata->data->inbacId = inbacId;
-  InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
-
-  if (id < MAX_NB_CRASHED) {
+  if (id < maxNbCrashed) {
 
     for (it = serverset->getFirst(); it != serverset->getLast();
          it = serverset->getNext(it)) {
       if (IPPortServerno::cmp(it->key, server) != 0) {
+
+        InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
+        rpcdata->data = new InbacMessageRPCParm;
+        rpcdata->data->type = 1;
+        rpcdata->data->votes = collection0;
+        rpcdata->data->owner = server;
+        rpcdata->data->inbacId = inbacId;
+        InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
 
         printf("Sending backup votes to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
         Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
@@ -231,11 +236,19 @@ void InbacData::timeoutEvent0() {
       }
     }
 
-  } else if (id == MAX_NB_CRASHED) {
+  } else if (id == maxNbCrashed) {
 
-    for (it = serverset->getFirst(); i < MAX_NB_CRASHED && it != serverset->getLast();
+    for (it = serverset->getFirst(); i < maxNbCrashed && it != serverset->getLast();
          it = serverset->getNext(it)) {
       if (IPPortServerno::cmp(it->key, server) != 0) {
+
+        InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
+        rpcdata->data = new InbacMessageRPCParm;
+        rpcdata->data->type = 1;
+        rpcdata->data->votes = collection0;
+        rpcdata->data->owner = server;
+        rpcdata->data->inbacId = inbacId;
+        InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
 
         printf("Sending backup votes to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
         Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
@@ -256,7 +269,7 @@ void InbacData::timeoutEvent1() {
     printf("*** Timeout 1 Event - Inbac ID = %d\n", inbacId);
 
     phase = 2;
-    if (id < MAX_NB_CRASHED) {
+    if (id < maxNbCrashed) {
 
       if (checkBackupVotes1()) {
         decision = getAndVotes1();
@@ -297,23 +310,26 @@ void InbacData::timeoutEvent1() {
         wait = true;
         SetNode<IPPortServerno> *it;
         int i = 0;
-        InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
+
         for (it = serverset->getFirst(); it != serverset->getLast();
              it = serverset->getNext(it), i++) {
 
-          InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
-          rpcdata->data = new InbacMessageRPCParm;
-          rpcdata->data->type = 2;
-          rpcdata->data->inbacId = inbacId;
+          if (i >= maxNbCrashed && IPPortServerno::cmp(it->key, server) != 0) {
 
-          if (i >= MAX_NB_CRASHED && IPPortServerno::cmp(it->key, server) != 0) {
             printf("Sending Help request to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
+
+            InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
+            rpcdata->data = new InbacMessageRPCParm;
+            rpcdata->data->type = 2;
+            rpcdata->data->inbacId = inbacId;
+            InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
+
             Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
                             inbacmessagecallback, imcd);
           }
         }
 
-        imcd->sem.wait(INFINITE);
+        sem->wait(INFINITE);
 
         wait = false;
         if (checkAllVotes1()) {
@@ -355,7 +371,7 @@ void InbacData::timeoutEvent1() {
 }
 
 bool InbacData::checkAllVotes1() {
-  if (collection1->getNitems() != MAX_NB_CRASHED) { return false; }
+  if (collection1->getNitems() != maxNbCrashed) { return false; }
   SetNode<SetPair> *it;
   for (it = collection1->getFirst(); it != collection1->getLast();
         it = collection1->getNext(it)) {
@@ -366,13 +382,13 @@ bool InbacData::checkAllVotes1() {
 }
 
 bool InbacData::checkBackupVotes1() {
-  if (collection1->getNitems() != MAX_NB_CRASHED + 1) { return false; }
+  if (collection1->getNitems() != maxNbCrashed + 1) { return false; }
   SetNode<SetPair> *it;
   bool foundF = false;
   for (it = collection1->getFirst(); it != collection1->getLast();
         it = collection1->getNext(it)) {
     int size = it->key.set.getNitems();
-    if (size == MAX_NB_CRASHED) {
+    if (size == maxNbCrashed) {
       if (foundF) { return false; } else { foundF = true; }
     } else if (size != getNNodes()) { return false; }
   }

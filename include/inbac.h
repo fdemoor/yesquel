@@ -64,6 +64,7 @@ private:
   int id;
   IPPortServerno server;
   CommitRPCData *crpcdata;
+  int maxNbCrashed;
 
   bool r1;
 
@@ -95,6 +96,7 @@ private:
 
 public:
 
+  Semaphore *sem;
   int inbacId;
   InbacData *prev, *next, *sprev, *snext;
   InbacData() {}
@@ -110,6 +112,7 @@ public:
   void incrCntHelp() { cntHelp++;  }
   int getCnt() { return cnt; }
   int getCntHelp() { return cntHelp; }
+  int getF() { return maxNbCrashed; }
   bool waiting() { return wait; }
   int addVote0(VotePair vote);
   int addVote0(Set<VotePair> *votes);
