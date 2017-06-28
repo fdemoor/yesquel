@@ -151,6 +151,7 @@ void ConsensusData::timeoutEvent() {
     setTimeout();
   } else {
     canDelete = true;
+    tryDelete();
   }
 }
 
@@ -180,7 +181,7 @@ void ConsensusData::lead() {
       }
     }
     InbacData *inbacData = InbacData::getInbacData(consId);
-    inbacData->decide(vote);
+    if (inbacData) { inbacData->decide(vote); }
   }
 }
 

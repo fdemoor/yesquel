@@ -1447,6 +1447,8 @@ Marshallable *loadfileRpc(LoadFileRPCData *d){
 
 Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
+  RPCTaskInfo *rti = (RPCTaskInfo*) rpctasknotify;
+
   int vote;
   InbacRPCRespData *resp = new InbacRPCRespData;
   assert(S); // if this assert fails, forgot to call initStorageServer()
@@ -1472,16 +1474,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
 
-  // SetNode<IPPortServerno> *it;
-  // for (it = d->data->serverset->getFirst(); it != d->data->serverset->getLast();
-  //      it = d->data->serverset->getNext(it)) {
-  //   printf("Server %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
-  // }
-
   vote = respPrep->data->vote;
-
-  resp->data = new InbacRPCResp;
-  resp->freedata = true;
 
   if (!rpcdata->data->onephasecommit) {
 
@@ -1502,15 +1495,21 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     }
     crpcdata->data->committs.addEpsilon();
     parm->commitData = crpcdata;
+    parm->rti = rti;
 
     startInbac((void*) parm);
 
-    CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
+    resp = NULL;
 
-  } else { printf("One phase commit\n"); }
+  } else {
 
-  resp->data->status = respPrep->data->status;
-  resp->data->decision = vote;
+    printf("One phase commit\n");
+    resp->data = new InbacRPCResp;
+    resp->freedata = true;
+    resp->data->status = respPrep->data->status;
+    resp->data->decision = vote;
+
+  }
 
   return resp;
 }
@@ -1615,6 +1614,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
         inbacData->decide(true);
       }
       if (consData) {
+        consData->setDone();
         if (!consData->isStarted()) { consData->setCanDelete(); consData->tryDelete(); }
       }
       resp->data->type = 2;
@@ -1628,6 +1628,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
         inbacData->decide(false);
       }
       if (consData) {
+        consData->setDone();
         if (!consData->isStarted()) { consData->setCanDelete(); consData->tryDelete(); }
       }
       resp->data->type = 2;

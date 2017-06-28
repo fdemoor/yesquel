@@ -845,6 +845,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 int Transaction::inbacId = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
+  printf("Got an answer !\n"); fflush(stdout);
   InbacCallbackData *icd = (InbacCallbackData*) callbackdata;
   InbacRPCRespData rpcresp;
   if (data){
@@ -925,6 +926,7 @@ int Transaction::auxinbac(Timestamp committs) {
   icd = icdlist.getFirst();
   int done = 1;
   while (done) {
+    printf("Waiting\n"); fflush(stdout);
     if (!(icd->sem.wait(MSG_DELAY / serverset->getNitems()))) {
       done = 0;
     }
@@ -934,6 +936,8 @@ int Transaction::auxinbac(Timestamp committs) {
       icd = icdlist.getFirst();
     }
   }
+
+  printf("Done !\n"); fflush(stdout);
 
   outcome = icd->data.decision;
   return outcome;

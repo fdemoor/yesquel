@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -165,10 +165,10 @@ struct TaskMsgEntry {
 };
 
 // information about a task
-enum SchedulerTaskState { SchedulerTaskStateNew=-1, 
-                          SchedulerTaskStateRunning=0, 
+enum SchedulerTaskState { SchedulerTaskStateNew=-1,
+                          SchedulerTaskStateRunning=0,
                           SchedulerTaskStateWaiting=1,
-                          SchedulerTaskStateTimedWaiting=2, 
+                          SchedulerTaskStateTimedWaiting=2,
                           SchedulerTaskStateEnding=3 };
 
 // A program takes as parameter a TaskInfo*
@@ -198,6 +198,8 @@ private:
 public:
   // information used by task
   TaskInfo *next, *prev; // link list stuff
+
+  int nbFuncCalls;  // Number of times Func was called
 
   void *State;    // task-specific state
 
@@ -265,6 +267,8 @@ public:
   void assignImmediateFunc(int n, ImmediateFunc func);
   ImmediateFunc getImmediateFunc(int n);
 
+  void endTask(TaskInfo *ti); // ends a task
+
   u8 getThreadNo(){ return ThreadNo; }
   ChannelManager *getCManager(){ return CManager; }
   int getForceEnd(){ return ForceEnd; }
@@ -283,7 +287,7 @@ public:
   // 0 if nothing happened
   void run(); // start scheduling tasks. Assumes that tinit() has been
               // previously executed once by thread
-  void sendMessage(TaskMsg &msg){ 
+  void sendMessage(TaskMsg &msg){
     int retry=0;
     int dst;
     TaskScheduler *dstts;
@@ -291,11 +295,11 @@ public:
       dst = TASKID_THREADNO((u32)(u64)msg.dest);
     else dst = msg.dest->getThreadNo();
     dstts = tgetThreadTaskScheduler(dst); assert(dstts);
-    
+
     while (CManager->sendMessage(dst, msg)){
       ++retry;
       if (retry % CHANNEL_SENDMSGRETRY_REPORT_WAIT == 0){
-        CManager->reportWait(dst); 
+        CManager->reportWait(dst);
       }
       if (retry % CHANNEL_SENDMSGRETRY_PROCESS_INCOMING == 0){
         processIncomingMessages();
@@ -307,13 +311,13 @@ public:
     }
     dstts->wake();
   }
-  
+
   void exitThread(){ ForceEnd = 1; wake(); }
 
   // returns 0 if no incoming messages, != 0 otherwise
   // Useful to determine if thread can go to sleep or not
-  int hasIncomingMessages(); 
-  
+  int hasIncomingMessages();
+
   // wake up thread by writing to SleepEventFd. This will presumably be called
   // by another thread to wake up the scheduler loop of the current thread
   void wake();
@@ -330,7 +334,7 @@ public:
   int findSleepTimeout();
 
   void setAsleep(int as){ Asleep = as; }   // sets asleep flag
-  
+
   // Go to sleep until waken up. This is to be called by the scheduler loop of
   // the current thread.
   // This function is provided as an example of how the scheduler loop can
@@ -374,18 +378,18 @@ public:
   ~ThreadContext();
   int getThreadNo(){ return ThreadNo; }
   ChannelManager *getCManager(){
-    if (TScheduler) return TScheduler->getCManager(); 
-    else return 0; 
+    if (TScheduler) return TScheduler->getCManager();
+    else return 0;
   }
   TaskScheduler *getTaskScheduler(){ return TScheduler; }
   void setTaskScheduler(TaskScheduler *ts){ TScheduler=ts; }
   void *getSharedSpace(int index){
-    assert(0 <= index && index < THREADCONTEXT_SHARED_SPACE_SIZE); 
-    return SharedSpace[index]; 
+    assert(0 <= index && index < THREADCONTEXT_SHARED_SPACE_SIZE);
+    return SharedSpace[index];
   }
-  void setSharedSpace(int index, void *v){ 
-    assert(0 <= index && index < THREADCONTEXT_SHARED_SPACE_SIZE); 
-    SharedSpace[index] = v; 
+  void setSharedSpace(int index, void *v){
+    assert(0 <= index && index < THREADCONTEXT_SHARED_SPACE_SIZE);
+    SharedSpace[index] = v;
   }
   char *getName(){ return Name; }
 };
@@ -458,7 +462,7 @@ public:
     assert(0 <= tclass && tclass < TASKSCHEDULER_MAX_THREAD_CLASSES);
     return NThreads[tclass];
   }
-  
+
   // returns the k-th thread of tclass
   int getThread(int tclass, int k){
     assert(0 <= tclass && tclass < TASKSCHEDULER_MAX_THREAD_CLASSES);

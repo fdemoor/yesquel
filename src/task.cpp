@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -146,6 +146,7 @@ void TaskInfo::TaskInfoInit(){
   TaskData = 0;
   State = 0;
   next = prev = 0;
+  nbFuncCalls = 0;
 }
 
 TaskInfo::TaskInfo(ProgFunc f, void *taskdata, int threadno){
@@ -283,16 +284,16 @@ void TaskScheduler::setTaskState(TaskInfo *ti, int newstate){
   switch(ti->CurrSchedulerTaskState){
   case SchedulerTaskStateNew:
     break;
-  case SchedulerTaskStateRunning: 
+  case SchedulerTaskStateRunning:
     RunningTasks.remove(ti);
     break;
-  case SchedulerTaskStateWaiting: 
+  case SchedulerTaskStateWaiting:
     WaitingTasks.remove(ti);
     break;
-  case SchedulerTaskStateTimedWaiting: 
+  case SchedulerTaskStateTimedWaiting:
     TimedWaitingTasks.remove(ti);
     break;
-  case SchedulerTaskStateEnding: 
+  case SchedulerTaskStateEnding:
     break;
   default:
     assert(0);
@@ -302,13 +303,13 @@ void TaskScheduler::setTaskState(TaskInfo *ti, int newstate){
   switch(newstate){
   case SchedulerTaskStateNew:
     assert(0);
-  case SchedulerTaskStateRunning: 
+  case SchedulerTaskStateRunning:
     RunningTasks.pushTail(ti);
     break;
-  case SchedulerTaskStateWaiting: 
+  case SchedulerTaskStateWaiting:
     WaitingTasks.pushTail(ti);
     break;
-  case SchedulerTaskStateTimedWaiting: 
+  case SchedulerTaskStateTimedWaiting:
     TimedWaitingTasks.pushTail(ti);
     wakeuptime = ti->getWakeUpTime();
     if (wakeuptime < TimeOfNextTimedWaiting)
@@ -463,7 +464,8 @@ int TaskScheduler::runOnce(){
     nextti = RunningTasks.getNext(ti);
     ++nrunning;
     //do {
-      tstate = ti->Func(ti); // invoke function
+      tstate = ti->Func(ti);  // invoke function
+      ti->nbFuncCalls++;      // log one more Func call
     //} while (tstate == SchedulerTaskStateRunning); // invoke function while
                                                     // it returns running
     assert(tstate != SchedulerTaskStateNew);
@@ -472,7 +474,7 @@ int TaskScheduler::runOnce(){
       tstate = SchedulerTaskStateRunning;
 
     setTaskState(ti, tstate);
-    
+
     if (tstate == SchedulerTaskStateEnding){
       if (ti->EndFunc) ti->EndFunc(ti);
       delete ti;
@@ -505,6 +507,12 @@ int TaskScheduler::runOnce(){
   // TODO: maybe here call scheduler. Or do it once every 100 interations of
   // the loop.
   return something;
+}
+
+void TaskScheduler::endTask(TaskInfo *ti) {
+  setTaskState(ti, SchedulerTaskStateEnding);
+  if (ti->EndFunc) ti->EndFunc(ti);
+  delete ti;
 }
 
 // assumes that tinit() has been previously executed once by thread
@@ -543,7 +551,7 @@ int TaskScheduler::findSleepTimeout(){
   if (RunningTasks.getFirst() != RunningTasks.getLast()) return 0; // no
                                         // sleeping since there are ready tasks
   if (NewTasks.getFirst() != NewTasks.getLast()) return 0; //there are new tasks
-  
+
   // check for timed waiting tasks
   if (TimeOfNextTimedWaiting != ULLONG_MAX){
     now = Time::now();
@@ -551,7 +559,7 @@ int TaskScheduler::findSleepTimeout(){
   }
   return res;
 }
-  
+
 
 // Sleeping should follow this discipline:
 //   1. set Asleep = 1
@@ -846,7 +854,7 @@ void TaskEventScheduler::ImmediateFuncEventSchedulerAdd(TaskMsgData &msgdata,
     if (tses->EventSchedulerTask->getSchedulerTaskState() ==
         SchedulerTaskStateTimedWaiting)
       ts->setTaskState(tses->EventSchedulerTask, SchedulerTaskStateRunning);
-    // if this event is at the top (smallest when time), wake up 
+    // if this event is at the top (smallest when time), wake up
     // thread otherwise it will sleep until the next event
   }
 }
@@ -871,7 +879,7 @@ int TaskEventScheduler::PROGEventScheduler(TaskInfo *ti){
       ed = copyTopEvent.ed;
       tses->TEvents.pop();
 
-      handlerres = ed->handler(ed->data);  
+      handlerres = ed->handler(ed->data);
 
       if (ed->type==1 && handlerres==0){ // reschedule event
         copyTopEvent.when = Time::now() + ed->msFromNow;

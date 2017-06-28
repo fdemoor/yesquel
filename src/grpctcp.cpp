@@ -72,7 +72,7 @@ void RPCTcp::handleMsg(int handlerid, IPPort *dest, u32 req, u32 xid,
     if (orpc && orpc->callback){
       orpc->callback(data, len, orpc->callbackdata);
     }
-    if (orpc){z
+    if (orpc){
       delete orpc->dmsg.data;
       delete orpc;
     }

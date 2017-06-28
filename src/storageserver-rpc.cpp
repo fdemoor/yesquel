@@ -241,12 +241,17 @@ int loadfileRpcStub(RPCTaskInfo *rti){
 }
 
 int inbacRpcStub(RPCTaskInfo *rti){
-  InbacRPCData d;
-  Marshallable *resp;
-  d.demarshall(rti->data);
-  resp = inbacRpc(&d, rti->State, (void*) rti);
-  rti->setResp(resp);
-  return SchedulerTaskStateEnding;
+  if (rti->nbFuncCalls == 0) {
+    InbacRPCData d;
+    Marshallable *resp;
+    d.demarshall(rti->data);
+    resp = inbacRpc(&d, rti->State, (void*) rti);
+    if (resp) {
+      rti->setResp(resp);
+      return SchedulerTaskStateEnding;
+    }
+  }
+  return SchedulerTaskStateRunning;
 }
 
 int inbacmessageRpcStub(RPCTaskInfo *rti) {

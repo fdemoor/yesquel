@@ -54,6 +54,15 @@ struct InbacMessageCallbackData {
 };
 void inbacmessagecallback(char *data, int len, void *callbackdata);
 
+struct InbacDataParm {
+  InbacRPCParm *parm;
+  IPPort ipport;
+  Ptr<RPCTcp> rpc;
+  int k;
+  int vote;
+  CommitRPCData *commitData;
+  RPCTaskInfo *rti;
+};
 
 class InbacData {
 
@@ -65,6 +74,7 @@ private:
   IPPortServerno server;
   CommitRPCData *crpcdata;
   int maxNbCrashed;
+  RPCTaskInfo *rti;
 
   bool r1;
 
@@ -100,7 +110,7 @@ public:
   int inbacId;
   InbacData *prev, *next, *sprev, *snext;
   InbacData() {}
-  InbacData(InbacRPCParm *param, IPPort ipport, Ptr<RPCTcp> rpc, int k, CommitRPCData *commitData);
+  InbacData(InbacDataParm *parm);
   void propose(int vote);
   void decide(bool d);
   void timeoutEvent();
@@ -130,15 +140,6 @@ public:
   }
   void setR1(bool b) { r1 = b; }
 
-};
-
-struct InbacDataParm {
-  InbacRPCParm *parm;
-  IPPort ipport;
-  Ptr<RPCTcp> rpc;
-  int k;
-  int vote;
-  CommitRPCData *commitData;
 };
 
 void* startInbac(void *arg_);

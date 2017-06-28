@@ -111,19 +111,20 @@ void InbacData::addVote1(Set<VotePair> *set, IPPortServerno owner) {
 }
 
 
-InbacData::InbacData(InbacRPCParm *param, IPPort p, Ptr<RPCTcp> rpc, int k, CommitRPCData *commitData) {
+InbacData::InbacData(InbacDataParm *parm) {
 
+  rti = parm->rti;
   sem = new Semaphore;
-  crpcdata = commitData;
-  inbacId = k;
-  Rpcc = rpc;
+  crpcdata = parm->commitData;
+  inbacId = parm->k;
+  Rpcc = parm->rpc;
   serverset = new Set<IPPortServerno>;
-  *serverset = *(param->serverset);
+  *serverset = *(parm->parm->serverset);
   SetNode<IPPortServerno> *it;
   int i = 0;
   for (it = serverset->getFirst(); it != serverset->getLast();
        it = serverset->getNext(it), i++) {
-    if (IPPort::cmp(it->key.ipport, p) == 0) {
+    if (IPPort::cmp(it->key.ipport, parm->ipport) == 0) {
       id = i;
       server = it->key;
       break;
@@ -459,6 +460,17 @@ void InbacData::decide(bool d) {
     printf("*** Decide %s Event - Inbac ID = %d\n", d ? "true" : "false", inbacId);
     crpcdata->data->commit = d ? 0 : 1;
     CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
+
+    InbacRPCRespData *resp = new InbacRPCRespData;
+    resp->data = new InbacRPCResp;
+    resp->freedata = true;
+    resp->data->status = respCom->data->status;
+    resp->data->decision = crpcdata->data->commit;
+    rti->setResp(resp);
+    TaskScheduler *ts = tgetTaskScheduler();
+    ts->endTask(rti);
+    printf("Task %p should end\n", rti);
+
     removeInbacData(this);
     delete this;
   }
@@ -466,7 +478,7 @@ void InbacData::decide(bool d) {
 
 void* startInbac(void *arg_) {
   InbacDataParm *parm = (InbacDataParm*) arg_;
-  InbacData *inbacData = new InbacData(parm->parm, parm->ipport, parm->rpc, parm->k, parm->commitData);
+  InbacData *inbacData = new InbacData(parm);
   inbacData->propose(parm->vote);
   return NULL;
 }

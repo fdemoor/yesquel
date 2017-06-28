@@ -93,6 +93,7 @@ public:
   bool isTryingLead() { return tryingLead; }
   void resetTryingLead() { tryingLead = false; }
   void setCanDelete() { canDelete = true; }
+  void setDone() { done = true; }
   void tryDelete();
   bool isStarted() { return started; }
   int getPhase() { return phase; }
