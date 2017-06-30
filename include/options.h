@@ -301,11 +301,11 @@
 
 #endif
 
-#define INBAC_PROTOCOL
+//#define INBAC_PROTOCOL
 // If set, use INBAC as commit protocol for non-local transactions
 // otherwise, use two-phase commit (2PC)
 
-#define MSG_DELAY 100
+#define MSG_DELAY 200
 // Sets the message delay used for INBAC protocol
 
 #define MAX_NB_CRASHED 2
@@ -313,3 +313,6 @@
 
 #define CONS_PRNG_SEED 15844842
 // Sets the seed used to initiliaze PRNG in Consensus module for INBAC
+
+//#define TX_DEBUG
+// Sets printing for INBAc debug

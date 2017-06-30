@@ -311,10 +311,26 @@ void InbacMessageRPCRespData::demarshall(char *buf) {
 }
 
 int VotePair::cmp(const VotePair &left, const VotePair &right) {
+
+  std::stringstream ss1;
+  ss1 << "<" << left.owner.ipport.ip << ":" << left.owner.ipport.port
+      << "," << (left.vote ? "true" : "false") << ">";
+  std::stringstream ss2;
+  ss2 << "<" << right.owner.ipport.ip << ":" << right.owner.ipport.port
+      << "," << (right.vote ? "true" : "false") << ">";
+
   if ( (left.vote == right.vote) &&
-    IPPortServerno::cmp(left.owner, right.owner) == 0) {
+       (left.owner.ipport.ip == right.owner.ipport.ip) &&
+       (left.owner.ipport.port == right.owner.ipport.port) ) {
+    #ifdef TX_DEBUG
+    printf("Comparing %s and %s : EQUAL\n", ss1.str().c_str(), ss2.str().c_str());
+    #endif
     return 0;
-  } else { return 1; }
+  } else {
+    #ifdef TX_DEBUG
+    printf("Comparing %s and %s : NOT EQUAL\n", ss1.str().c_str(), ss2.str().c_str());
+    #endif
+    return -1; }
 }
 
 const char* VotePair::toString(VotePair &p) {

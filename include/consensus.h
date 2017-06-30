@@ -74,13 +74,17 @@ private:
   bool tryingLead;
   int phase;
   int nbAcks;
+  int decisionAcks;
+  bool voted;
+
+  bool r;
 
   static HashTable<int,ConsensusData> *consDataObjects;
 
-  void setTimeout();
-
 public:
 
+  void setTimeout();
+  void setR() { r = false; }
   int consId;
   ConsensusData *prev, *next, *sprev, *snext;
   ConsensusData() {}
@@ -89,6 +93,11 @@ public:
   void timeoutEvent();
   void lead();
   void addAck() { nbAcks++; }
+  void addDecisionAck() { decisionAcks++; }
+  bool isElected() { return elected; }
+  bool hasVoted() { return voted; }
+  void doVote() { voted = true; }
+  bool allDecisionAcks() { return decisionAcks == getNNodes(); }
   bool enoughAcks() { return (nbAcks + 1  > (getNNodes() / 2)); }
   bool isTryingLead() { return tryingLead; }
   void resetTryingLead() { tryingLead = false; }
@@ -99,6 +108,7 @@ public:
   int getPhase() { return phase; }
   int getNNodes() { return serverset->getNitems(); }
   int GetKey() { return consId; }
+  void catchup(int p) { if (p > phase) { phase = p; voted = false; } }
   static ConsensusData* getConsensusData(int key);
   static void insertConsensusData(ConsensusData *data);
   static void removeConsensusData(ConsensusData *data);

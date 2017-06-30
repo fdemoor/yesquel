@@ -6,6 +6,8 @@ BENCHLIB_SRC = bench-config.cpp bench-log.cpp bench-mysql-client.cpp bench-redis
 
 BENCHLIB_OBJ = $(BENCHLIB_SRC:.cpp=.o)
 
+INBAC_OBJ = $(SRC_DIR)/inbac.o $(SRC_DIR)/consensus.o
+
 all: $(TARGET)
 
 ALL_SRC = $(shell find . -name "*.cpp")
@@ -28,21 +30,21 @@ test-various: test-various.o $(SRC_DIR)/task.o $(SRC_DIR)/tmalloc.o $(SRC_DIR)/o
 test-gaia: test-gaia.o $(SRC_DIR)/yesquel.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-test-gaialocal: test-gaialocal.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+test-gaialocal: test-gaialocal.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 test-gaialocal.o: test-gaia.cpp test-gaialocal.cpp
 
-test-sql: test-sql.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+test-sql: test-sql.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-showdtree: showdtree.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+showdtree: showdtree.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-shelldt: shelldt.o $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+shelldt: shelldt.o $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
-test-tree: test-tree.o $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+test-tree: test-tree.o $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 bench.a: ${BENCHLIB_OBJ}
@@ -60,10 +62,10 @@ bench-mysql.o:
 bench-mysql-client.o:
 	$(CXX) $(CXXFLAGS) -I/usr/include/mysql -c -o $@ $<
 
-bench-yesql: bench-yesql.o bench.a $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+bench-yesql: bench-yesql.o bench.a $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl $(LDLIBS)
 
-bench-dtree: bench-dtree.o bench.a $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+bench-dtree: bench-dtree.o bench.a $(SRC_DIR)/treedirect.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl $(LDLIBS)
 
 bench-wiki-mysql: bench-wiki-mysql.o bench.a
@@ -76,7 +78,7 @@ bench-wiki-mysql-client.o:
 	$(CXX) $(CXXFLAGS) -I/usr/include/mysql -c -o $@ $<
 
 
-bench-wiki-yesql: bench-wiki-yesql.o bench.a $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a
+bench-wiki-yesql: bench-wiki-yesql.o bench.a $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a $(INBAC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lyajl $(LDLIBS)
 
 getserver: getserver.o $(SRC_DIR)/yesquel.a $(SRC_DIR)/localstorage.a

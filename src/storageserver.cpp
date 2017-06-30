@@ -1503,10 +1503,16 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   } else {
 
+    #ifdef TX_DEBUG
     printf("One phase commit\n");
+    #endif
     resp->data = new InbacRPCResp;
     resp->freedata = true;
     resp->data->status = respPrep->data->status;
+    resp->data->committs = d->data->committs;
+    if (Timestamp::cmp(respPrep->data->mincommitts, resp->data->committs) > 0) {
+      resp->data->committs = respPrep->data->mincommitts;
+    }
     resp->data->decision = vote;
 
   }
@@ -1527,8 +1533,10 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
     switch (d->data->type) {
 
       case 0: {
+        #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %d - %s\n",
             d->data->inbacId, VotePair::toString(d->data->vote));
+        #endif
         resp->data->type = 1;
         if (inbacData->getPhase() == 0) {
           int k = inbacData->addVote0(d->data->vote);
@@ -1547,8 +1555,10 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         SetPair *p = new SetPair;
         p->owner = d->data->owner;
         p->set = *(d->data->votes);
+        #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %d - %s\n",
             d->data->inbacId, SetPair::toString(*p));
+        #endif
         resp->data->type = 1;
         inbacData->addVote1(d->data->votes, d->data->owner);
         inbacData->incrCnt();
@@ -1561,7 +1571,9 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
 
       } case 2: {
         if (inbacData->getPhase() == 2 && inbacData->getId() >= inbacData->getF()) {
+          #ifdef TX_DEBUG
           printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, "Help");
+          #endif
           resp->data->type = 0;
           resp->data->votes = inbacData->getVote0();
         }
@@ -1590,14 +1602,21 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
   switch (d->data->type) {
 
     case 0: {
+      #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons xact");
+      #endif
       ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
       int vote;
       if (consData) {
-        if (consData->isTryingLead() && consData->getPhase() == d->data->phase) {
+        consData->catchup(d->data->phase);
+        consData->setR();
+        consData->setTimeout();
+        if ( consData->isTryingLead() && consData->getPhase() == d->data->phase
+              || consData->isElected() || consData->hasVoted() ) {
           vote = 0;
         } else {
           vote = 1;
+          consData->doVote();
           consData->resetTryingLead();
         }
       } else {
@@ -1607,7 +1626,9 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
       break;
 
     } case 1: {
+      #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons commit");
+      #endif
       ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
       InbacData *inbacData = InbacData::getInbacData(d->data->consId);
       if (inbacData) {
@@ -1621,7 +1642,9 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
       break;
 
     } case 2: {
+      #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons abort");
+      #endif
       ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
       InbacData *inbacData = InbacData::getInbacData(d->data->consId);
       if (inbacData) {

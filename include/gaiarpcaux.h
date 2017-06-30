@@ -427,6 +427,7 @@ public:
 struct InbacRPCResp {
   int status;           // should always be zero
   int decision;         // 0 = commit, 1 = abort
+  Timestamp committs;
 };
 
 class InbacRPCRespData : public Marshallable {
@@ -513,7 +514,7 @@ public:
 };
 
 struct ConsensusMessageRPCResp {
-  int type;           // 0: no, 1: yes, -1:error, else: no callback needed;
+  int type;           // 0: no, 1: yes, 2: decision ack, -1:error, else: no callback needed;
   int consId;
 };
 

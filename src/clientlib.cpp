@@ -845,7 +845,9 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 int Transaction::inbacId = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
+  #ifdef TX_DEBUG
   printf("Got an answer !\n"); fflush(stdout);
+  #endif
   InbacCallbackData *icd = (InbacCallbackData*) callbackdata;
   InbacRPCRespData rpcresp;
   if (data){
@@ -854,6 +856,9 @@ void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
   } else {
     icd->data.decision = -1;   // indicates an error
   }
+  #ifdef TX_DEBUG
+  printf("Signal semaphore %p\n", &(icd->sem));
+  #endif
   icd->sem.signal();
   return; // free buffer
 }
@@ -870,7 +875,7 @@ int Transaction::auxinbac(Timestamp committs) {
   InbacRPCData *rpcdata;
   InbacCallbackData *icd;
   LinkList<InbacCallbackData> icdlist(true);
-  int outcome;
+  int outcome, res;
   Set<IPPortServerno> *serverset;
   int hascommitted;
 
@@ -888,7 +893,7 @@ int Transaction::auxinbac(Timestamp committs) {
 #endif
 
   for (it = serverset->getFirst(); it != serverset->getLast();
-       it = serverset->getNext(it)){
+       it = serverset->getNext(it)) {
     server = it->key;
 
     rpcdata = new InbacRPCData;
@@ -922,24 +927,46 @@ int Transaction::auxinbac(Timestamp committs) {
 
   }
 
+  #ifdef TX_DEBUG
+  printf("%d callback in list, for %d servers\n", icdlist.getNitems(), serverset->getNitems());
+  #endif
+
   // Wait until at least one node ended the protocol
-  icd = icdlist.getFirst();
-  int done = 1;
-  while (done) {
-    printf("Waiting\n"); fflush(stdout);
-    if (!(icd->sem.wait(MSG_DELAY / serverset->getNitems()))) {
-      done = 0;
+  // icd = icdlist.getFirst();
+  // int done = 1;
+  // while (done) {
+  //   printf("hello\n");
+  //   if (icd == icdlist.getLast()) {
+  //     icd = icdlist.getFirst();
+  //   } else {
+  //     printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
+  //     if (!(icd->sem.wait(MSG_DELAY / serverset->getNitems()))) {
+  //       done = 0;
+  //     }
+  //     icd = icdlist.getNext(icd);
+  //   }
+  // }
+
+  for (icd = icdlist.getFirst(); icd != icdlist.getLast();
+       icd = icdlist.getNext(icd)){
+    #ifdef TX_DEBUG
+    printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
+    #endif
+    icd->sem.wait(INFINITE);
+    if (icd->data.status < 0) res = GAIAERR_SERVER_TIMEOUT; // error contacting
+                                                            // server
+    else {
+      outcome = icd->data.decision;
+      if ( !icd->data.committs.isIllegal() &&
+          Timestamp::cmp(icd->data.committs, committs) > 0){
+        committs = icd->data.committs; // update largest waitingts found
+      }
     }
-    if (icd != icdlist.getLast()) {
-      icd = icdlist.getNext(icd);
-    } else {
-      icd = icdlist.getFirst();
-    }
+    #ifdef TX_DEBUG
+    printf("Done !\n"); fflush(stdout);
+    #endif
   }
 
-  printf("Done !\n"); fflush(stdout);
-
-  outcome = icd->data.decision;
   return outcome;
 
 }

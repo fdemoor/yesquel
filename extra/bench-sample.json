@@ -1,13 +1,13 @@
 {
   "Common" : {
-    "tuples" : 10000,
+    "tuples" : 1000,
     "seed" : 45,
     "key_len" : 256,
     "value_len" : 100,
     "max_fields" : 2,
     "shape" : 0.5,
     "load" : 1,
-    "mysql" : "svc-d7-18:test",
+    "mysql" : "localhost:3306",
     "redis" : "localhost",
     "yesql" : "simple.db",
     "lead-time" : 2,
@@ -15,12 +15,12 @@
     "warmup" : 5,
     "cooldown" : 5,
     "logdir" : "/tmp",
-    "leader" : "SVC-D7-11"
+    "leader" : "localhost"
   },
-  "Workload G 1" : {
-    "load" : 0,
+  "Workload H 1" : {
+    "load" : 1,
     "firstkey" : 1,
     "threads" : 1,
-    "workload" : "G"
+    "workload" : "H"
   }
 }

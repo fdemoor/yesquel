@@ -240,7 +240,7 @@ int loadfileRpcStub(RPCTaskInfo *rti){
   return SchedulerTaskStateEnding;
 }
 
-int inbacRpcStub(RPCTaskInfo *rti){
+int inbacRpcStub(RPCTaskInfo *rti){;
   if (rti->nbFuncCalls == 0) {
     InbacRPCData d;
     Marshallable *resp;

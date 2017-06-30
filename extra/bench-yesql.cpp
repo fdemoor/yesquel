@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -130,6 +130,7 @@ int main(int argc, char* argv[])
       bool do_load = false;
       if (!load_complete)
         do_load = cfg.get<bool>("load", true);
+      LOG("Do load is %s\n", do_load ? "true" : "false");
       LOG("About to do a yesql experiment with %d threads\n", nthreads);
       do_experiment(nthreads, system_conf.c_str(), &cfg, do_load);
       load_complete = true;

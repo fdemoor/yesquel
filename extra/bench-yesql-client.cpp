@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -72,7 +72,6 @@ int YesqlClient::Init(){
       usleep(1000000);
     }
   } while (ret != SQLITE_OK && retries < 10);
-    
   if (ret == SQLITE_OK && _create){
     LOG("Succesfully opened db, about to create a table:\n%s\n", BENCHMARK_TABLE_STMT);
     char* err_str = nullptr;
@@ -140,7 +139,7 @@ int YesqlClient::stmt_cache(int index, const char *sql, sqlite3_stmt **ret){
     int j;
     cache_stmt = new sqlite3_stmt*[STMT_CACHE_SIZE];
     for (j=0; j < STMT_CACHE_SIZE; ++j) cache_stmt[j] = 0;
-    
+
     cache_sql = new char*[STMT_CACHE_SIZE];
     for (j=0; j < STMT_CACHE_SIZE; ++j) cache_sql[j] = 0;
   }
@@ -194,7 +193,7 @@ sqlite3_stmt *YesqlClient::construct_sql_read(const TableId& table, const Key& k
   sql.append("=?");
 
   rc = stmt_cache(STMT_INDEX_READ, sql.c_str(), &ret);
-  
+
   if (rc == SQLITE_OK){
     prepared = true;
     rc = bind_key(ret, key);
@@ -303,9 +302,9 @@ sqlite3_stmt *YesqlClient::construct_sql_update(const TableId& table, const Key&
   sql.append("WHERE ");
   sql.append(KEYNAME);
   sql.append("=?");
-  
+
   int rc = stmt_cache(STMT_INDEX_UPDATE, sql.c_str(), &ret);
-  
+
   if (rc == SQLITE_OK){
     int count = 1;
     prepared = true;
@@ -364,12 +363,12 @@ sqlite3_stmt *YesqlClient::construct_sql_insert(const TableId& table, const Key&
   sql.back() = ')';
 
   int rc = stmt_cache(STMT_INDEX_INSERT, sql.c_str(), &ret);
-  
+
   if (rc == SQLITE_OK){
     int count = 1;
     rc = sqlite3_bind_int64(ret, count++, MurmurHash64A(key.c_str(), (int) key.length()));
     //rc = sqlite3_bind_text(ret, count++, key.c_str(), (int) key.length(), SQLITE_STATIC);
-    
+
     for (auto& it : values){
       if (rc != SQLITE_OK) break;
       rc = sqlite3_bind_text(ret, count++, it.second.c_str(), (int) it.second.length(), SQLITE_STATIC);
@@ -452,9 +451,9 @@ sqlite3_stmt *YesqlClient::construct_sql_remove(const TableId& table, const Key&
   sql.append(" WHERE ");
   sql.append(KEYNAME);
   sql.append("=?");
-  
+
   int rc = stmt_cache(STMT_INDEX_REMOVE, sql.c_str(), &ret);
-  
+
   if (rc == SQLITE_OK){
     rc = bind_key(ret, key);
   }
