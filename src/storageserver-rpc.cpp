@@ -251,7 +251,7 @@ int inbacRpcStub(RPCTaskInfo *rti){;
       return SchedulerTaskStateEnding;
     }
   }
-  return SchedulerTaskStateRunning;
+  return SchedulerTaskStateWaiting;
 }
 
 int inbacmessageRpcStub(RPCTaskInfo *rti) {

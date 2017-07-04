@@ -1565,6 +1565,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         int n = inbacData->getCnt();
         int f = inbacData->getF();
         if (n == f) {
+          inbacData->setR2(false);
           TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
         }
         break;
@@ -1658,6 +1659,9 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
       break;
 
     } default: {
+      #ifdef TX_DEBUG
+      printf("Invalid consensus message\n");
+      #endif
       resp->data->type = -1; // Should not happen
       break;
     }

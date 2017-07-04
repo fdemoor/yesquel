@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -65,7 +65,7 @@ extern StorageConfig *SC;
 
 GlobalCache GCache;
 
-GlobalCache::GlobalCache() : 
+GlobalCache::GlobalCache() :
   Cache(GLOBALCACHE_HASHTABLE_SIZE)
 {
 }
@@ -198,7 +198,7 @@ int commitTx(KVTransaction *tx, Timestamp *retcommitts){
         do { // repeat until split is successful
           ++retries;
           dputchar(1,'S');
-          res = DtSplit(wi->coid, 0, true, moreSplitCallback, (void*) tx); 
+          res = DtSplit(wi->coid, 0, true, moreSplitCallback, (void*) tx);
           if (res){
             dputchar(1,'X');
             mssleep(10);
@@ -266,7 +266,7 @@ int KVget(KVTransaction *tx, COid coid, Ptr<Valbuf> &buf){
                                                 // ephemeral for remote txs
     res = tx->u.t->vget(coid, buf);
   }
-  if (res) 
+  if (res)
     buf=0;
 
   KVLOG("Tx %p cid %llx oid %llx bytes %d", tx, (long long)coid.cid,
@@ -374,7 +374,7 @@ int KVlistadd(KVTransaction *tx, COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
 int KVlistadd(KVTransaction *tx, COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
               int flags, int *ncells, int *size){
 #endif
-  
+
   int res=-1;
   tx->readonly = 0;
   KVLOG("Tx %p cid %llx oid %llx flags %d", tx, (long long)coid.cid,
@@ -385,7 +385,7 @@ int KVlistadd(KVTransaction *tx, COid coid, ListCell *cell, Ptr<RcKeyInfo> prki,
     res = tx->u.lt->listAdd(coid, cell, prki, flags);
 #else
     res = tx->u.lt->listAdd(coid, cell, prki, flags, ncells, size);
-#endif  
+#endif
   else {
     assert(!(coid.cid >> 48 & EPHEMDB_CID_BIT)); // container should not
                                                 // be ephemeral for remote txs
@@ -443,7 +443,7 @@ int KVattrset(KVTransaction *tx, COid coid, u32 attrid, u64 attrval){
   }
   return res;
 }
- 
+
 // return whether transaction is read-only so far
 int KVtxreadonly(KVTransaction *tx){
   return tx->readonly;

@@ -77,6 +77,7 @@ private:
   RPCTaskInfo *rti;
 
   bool r1;
+  bool r2;
 
   int phase;
   bool proposed;
@@ -104,7 +105,12 @@ private:
   bool checkHelpVotes();
   bool getAndHelpVotes();
 
+  void tryDelete();
+
 public:
+
+  static int nbTotalTx;
+  static int nbTotalCons;
 
   Semaphore *sem;
   int inbacId;
@@ -126,6 +132,7 @@ public:
   bool waiting() { return wait; }
   int addVote0(VotePair vote);
   int addVote0(Set<VotePair> *votes);
+  int addVoteHelp(Set<VotePair> *votes);
   Set<VotePair>* getVote0() { return collection0; }
   void addVote1(Set<VotePair> *set, IPPortServerno owner);
   int GetKey() { return inbacId; }
@@ -139,6 +146,7 @@ public:
       else { return +1; }
   }
   void setR1(bool b) { r1 = b; }
+  void setR2(bool b) { r2 = b; }
 
 };
 

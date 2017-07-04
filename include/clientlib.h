@@ -74,6 +74,14 @@
 StorageConfig *InitGaia(void);
 void UninitGaia(StorageConfig *SC);
 
+class TransactionID {
+private:
+  static int id;
+public:
+  static void incr() { id++; }
+  static int get() { return id; }
+};
+
 class Transaction
 {
 private:
@@ -86,7 +94,6 @@ private:
   bool hasWrites;
   bool hasWritesCachable; // whether tx writes to cachable items
   int currlevel;          // current subtransaction level
-  static int inbacId;
 
   char *piggy_buf;   // data to be piggybacked
   IPPortServerno piggy_server; // server holding coid to be written

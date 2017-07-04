@@ -1,6 +1,6 @@
 {
   "Common" : {
-    "tuples" : 1000,
+    "tuples" : 100,
     "seed" : 45,
     "key_len" : 256,
     "value_len" : 100,
@@ -11,9 +11,9 @@
     "redis" : "localhost",
     "yesql" : "simple.db",
     "lead-time" : 2,
-    "duration" : 20,
-    "warmup" : 5,
-    "cooldown" : 5,
+    "duration" : 40,
+    "warmup" : 10,
+    "cooldown" : 10,
     "logdir" : "/tmp",
     "leader" : "localhost"
   },

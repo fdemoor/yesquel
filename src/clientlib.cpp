@@ -830,7 +830,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
   int outcome;
 #ifdef INBAC_PROTOCOL
   outcome = tryCommitINBAC(retcommitts);
-  inbacId++;
+  TransactionID::incr();
   printf("%s\n", "Using INBAC protocol");
 #else
   outcome = tryCommit2PC(retcommitts);
@@ -842,7 +842,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 
 //---------------------------- INBAC ---------------------------------
 
-int Transaction::inbacId = 0;
+int TransactionID::id = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
   #ifdef TX_DEBUG
@@ -904,7 +904,7 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->tid = Id;
     rpcdata->data->committs = committs;
     rpcdata->data->onephasecommit = hascommitted;
-    rpcdata->data->inbacId = inbacId;
+    rpcdata->data->inbacId = TransactionID::get();
 
     rpcdata->data->piggy_cid = 0;
     rpcdata->data->piggy_oid = 0;

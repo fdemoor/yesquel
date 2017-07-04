@@ -53,7 +53,7 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
       #endif
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
       if (inbacData->getId() >= inbacData->getF()) {
-        inbacData->addVote0(pcd->data.votes);
+        inbacData->addVoteHelp(pcd->data.votes);
         inbacData->incrCntHelp();
         if ( (inbacData->getCnt() + inbacData->getCntHelp())
           >= (inbacData->getNNodes() - inbacData->getF())
@@ -79,6 +79,8 @@ int inbacTimeoutHandler(void* arg) {
 }
 
 HashTable<int,InbacData>* InbacData::inbacDataObjects = new HashTable<int,InbacData>(100);
+int InbacData::nbTotalTx = 0;
+int InbacData::nbTotalCons = 0;
 
 InbacData* InbacData::getInbacData(int key) {
   InbacData* data = inbacDataObjects->lookup(key);
@@ -102,6 +104,17 @@ int InbacData::addVote0(VotePair vote) {
 }
 
 int InbacData::addVote0(Set<VotePair> *votes) {
+  SetNode<VotePair> *it;
+  for (it = votes->getFirst(); it != votes->getLast(); it = votes->getNext(it)) {
+    VotePair *v = new VotePair;
+    v->vote = it->key.vote;
+    v->owner = it->key.owner;
+    if (!collection0->belongs(*v)) { collection0->insert(*v); }
+  }
+  return collection0->getNitems();
+}
+
+int InbacData::addVoteHelp(Set<VotePair> *votes) {
   SetNode<VotePair> *it;
   for (it = votes->getFirst(); it != votes->getLast(); it = votes->getNext(it)) {
     VotePair *v = new VotePair;
@@ -144,6 +157,7 @@ InbacData::InbacData(InbacDataParm *parm) {
   maxNbCrashed = (MAX_NB_CRASHED < n) ? MAX_NB_CRASHED : n - 1;
 
   r1 = true;
+  r2 = true;
 
   #ifdef TX_DEBUG
   printf("My INBAC id is %d (%u:%u)\n", id, server.ipport.ip, server.ipport.port);
@@ -165,9 +179,12 @@ InbacData::InbacData(InbacDataParm *parm) {
 
 void InbacData::propose(int vote) {
 
+  // InbacData::nbTotalTx++;
+
   #ifdef TX_DEBUG
   printf("*** Propose %s Event - Inbac ID = %d\n",
     (vote == 0) ? "true" : "false", inbacId);
+  printf("Inbac is %p\n", this);
   #endif
 
   // Set value
@@ -214,11 +231,19 @@ void InbacData::propose(int vote) {
   }
 }
 
+void InbacData::tryDelete() {
+  removeInbacData(this);
+  delete this;
+}
+
 void InbacData::timeoutEvent() {
   if (phase == 0) {
     timeoutEvent0();
   } else if (phase == 1 && !decided && !proposed) {
     timeoutEvent1();
+  } else {
+    r2 = true;
+    if (decided) { tryDelete(); }
   }
 }
 
@@ -226,6 +251,7 @@ void InbacData::timeoutEvent0() {
 
   #ifdef TX_DEBUG
   printf("*** Timeout 0 Event - Inbac ID = %d\n", inbacId);
+  printf("Inbac is %p\n", this);
   #endif
 
   SetNode<IPPortServerno> *it;
@@ -436,7 +462,7 @@ bool InbacData::checkBackupVotes1() {
       if (foundF) { return false; } else { foundF = true; }
     } else if (size != getNNodes()) { return false; }
   }
-  return true;
+  return foundF;
 }
 
 bool InbacData::getAndVotes1() {
@@ -506,6 +532,7 @@ bool InbacData::getAndHelpVotes() {
 
 void InbacData::decide(bool d) {
   if (!decided) {
+    // printf("%d Consensus out of %d transactions\n", InbacData::nbTotalCons, InbacData::nbTotalTx);
     decided = true;
     #ifdef TX_DEBUG
     printf("*** Decide %s Event - Inbac ID = %d\n", d ? "true" : "false", inbacId);
@@ -524,10 +551,11 @@ void InbacData::decide(bool d) {
     ts->endTask(rti);
     #ifdef TX_DEBUG
     printf("Task %p should end\n", rti);
+    printf("Delete inbac %p\n", this);
     #endif
 
-    // removeInbacData(this); // FIXME delete inbac data
-    // delete this;
+    if (r2) { tryDelete(); }
+
   }
 }
 
