@@ -127,7 +127,7 @@ void ConsensusData::setTimeout() {
 }
 
 void ConsensusData::propose(bool v) {
-  // InbacData::nbTotalCons++;
+  InbacData::nbTotalCons++;
   started = true;
   vote = v;
   setTimeout();

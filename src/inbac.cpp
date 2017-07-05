@@ -81,6 +81,7 @@ int inbacTimeoutHandler(void* arg) {
 HashTable<int,InbacData>* InbacData::inbacDataObjects = new HashTable<int,InbacData>(100);
 int InbacData::nbTotalTx = 0;
 int InbacData::nbTotalCons = 0;
+int InbacData::nbTotalAbort = 0;
 
 InbacData* InbacData::getInbacData(int key) {
   InbacData* data = inbacDataObjects->lookup(key);
@@ -179,7 +180,7 @@ InbacData::InbacData(InbacDataParm *parm) {
 
 void InbacData::propose(int vote) {
 
-  // InbacData::nbTotalTx++;
+  InbacData::nbTotalTx++;
 
   #ifdef TX_DEBUG
   printf("*** Propose %s Event - Inbac ID = %d\n",
@@ -532,7 +533,8 @@ bool InbacData::getAndHelpVotes() {
 
 void InbacData::decide(bool d) {
   if (!decided) {
-    // printf("%d Consensus out of %d transactions\n", InbacData::nbTotalCons, InbacData::nbTotalTx);
+    if (!d) { InbacData::nbTotalAbort++; }
+    // printf("%d Consensus out of %d transactions, %d aborts\n", InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort);
     decided = true;
     #ifdef TX_DEBUG
     printf("*** Decide %s Event - Inbac ID = %d\n", d ? "true" : "false", inbacId);

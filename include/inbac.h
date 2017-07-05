@@ -111,6 +111,7 @@ public:
 
   static int nbTotalTx;
   static int nbTotalCons;
+  static int nbTotalAbort;
 
   Semaphore *sem;
   int inbacId;
