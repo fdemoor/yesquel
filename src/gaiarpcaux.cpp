@@ -241,16 +241,16 @@ int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
   nbBuf++;
 
   if (data->type == 1) {
-    data->nbVotes = data->votes->getNitems();
-    char* raw = (char*) malloc(data->nbVotes * sizeof(VotePair));
-    SetNode<VotePair> *it;
+    data->nbVotes = data->owners->getNitems();
+    char* raw = (char*) malloc(data->nbVotes * sizeof(IPPortServerno));
+    SetNode<IPPortServerno> *it;
     int n = 0;
-    for (it = data->votes->getFirst(); it != data->votes->getLast();
-         it = data->votes->getNext(it), n++) {
-      memcpy(raw + n * sizeof(VotePair), &(it->key), sizeof(VotePair));
+    for (it = data->owners->getFirst(); it != data->owners->getLast();
+         it = data->owners->getNext(it), n++) {
+      memcpy(raw + n * sizeof(IPPortServerno), &(it->key), sizeof(IPPortServerno));
     }
     bufs[nbBuf].iov_base = raw;
-    bufs[nbBuf].iov_len = data->nbVotes * sizeof(VotePair);
+    bufs[nbBuf].iov_len = data->nbVotes * sizeof(IPPortServerno);
     nbBuf++;
   }
 
@@ -261,13 +261,13 @@ void InbacMessageRPCData::demarshall(char *buf) {
   data = (InbacMessageRPCParm*) buf;
   if (data->type == 1) {
     char* raw = buf + sizeof(InbacMessageRPCParm);
-    Set<VotePair> *votes = new Set<VotePair>;
+    Set<IPPortServerno> *owners = new Set<IPPortServerno>;
     int n;
     for (n = 0; n < data->nbVotes; n++) {
-      VotePair *pair = (VotePair*) (raw + n * sizeof(VotePair));
-      votes->insert(*pair);
+      IPPortServerno *server = (IPPortServerno*) (raw + n * sizeof(IPPortServerno));
+      owners->insert(*server);
     }
-    data->votes = votes;
+    data->owners = owners;
   }
 }
 
@@ -280,16 +280,16 @@ int InbacMessageRPCRespData::marshall(iovec *bufs, int maxbufs) {
   nbBuf++;
 
   if (data->type == 0) {
-    data->nbVotes = data->votes->getNitems();
-    char* raw = (char*) malloc(data->nbVotes * sizeof(VotePair));
-    SetNode<VotePair> *it;
+    data->nbVotes = data->owners->getNitems();
+    char* raw = (char*) malloc(data->nbVotes * sizeof(IPPortServerno));
+    SetNode<IPPortServerno> *it;
     int n = 0;
-    for (it = data->votes->getFirst(); it != data->votes->getLast();
-         it = data->votes->getNext(it), n++) {
-      memcpy(raw + n * sizeof(VotePair), &(it->key), sizeof(VotePair));
+    for (it = data->owners->getFirst(); it != data->owners->getLast();
+         it = data->owners->getNext(it), n++) {
+      memcpy(raw + n * sizeof(IPPortServerno), &(it->key), sizeof(IPPortServerno));
     }
     bufs[nbBuf].iov_base = raw;
-    bufs[nbBuf].iov_len = data->nbVotes * sizeof(VotePair);
+    bufs[nbBuf].iov_len = data->nbVotes * sizeof(IPPortServerno);
     nbBuf++;
   }
 
@@ -300,65 +300,22 @@ void InbacMessageRPCRespData::demarshall(char *buf) {
   data = (InbacMessageRPCResp*) buf;
   if (data->type == 0) {
     char* raw = buf + sizeof(InbacMessageRPCResp);
-    Set<VotePair> *votes = new Set<VotePair>;
+    Set<IPPortServerno> *owners = new Set<IPPortServerno>;
     int n;
     for (n = 0; n < data->nbVotes; n++) {
-      VotePair *pair = (VotePair*) (raw + n * sizeof(VotePair));
-      votes->insert(*pair);
+      IPPortServerno *server = (IPPortServerno*) (raw + n * sizeof(IPPortServerno));
+      owners->insert(*server);
     }
-    data->votes = votes;
+    data->owners = owners;
   }
 }
 
-int VotePair::cmp(const VotePair &left, const VotePair &right) {
-
-  std::stringstream ss1;
-  ss1 << "<" << left.owner.ipport.ip << ":" << left.owner.ipport.port
-      << "," << (left.vote ? "true" : "false") << ">";
-  std::stringstream ss2;
-  ss2 << "<" << right.owner.ipport.ip << ":" << right.owner.ipport.port
-      << "," << (right.vote ? "true" : "false") << ">";
-
-  if ( (left.vote == right.vote) &&
-       (left.owner.ipport.ip == right.owner.ipport.ip) &&
-       (left.owner.ipport.port == right.owner.ipport.port) ) {
-    #ifdef TX_DEBUG
-    printf("Comparing %s and %s : EQUAL\n", ss1.str().c_str(), ss2.str().c_str());
-    #endif
-    return 0;
-  } else {
-    #ifdef TX_DEBUG
-    printf("Comparing %s and %s : NOT EQUAL\n", ss1.str().c_str(), ss2.str().c_str());
-    #endif
-    return -1; }
-}
-
-const char* VotePair::toString(VotePair &p) {
-  std::stringstream ss;
-  ss << "<" << p.owner.ipport.ip << ":" << p.owner.ipport.port
-      << "," << (p.vote ? "true" : "false") << ">";
-  return ss.str().c_str();
-}
 
 int SetPair::cmp(const SetPair &left, const SetPair &right) {
-  // Very weak comparison, but should be enough
-  if (IPPortServerno::cmp(left.owner, right.owner) == 0) {
-    return 0;
-  } else {
-    return 1;
-  }
+  // Should not be a problem
+  return -1;
 }
 
-const char* SetPair::toString(SetPair &p) {
-  std::stringstream ss;
-  ss << "<" << p.owner.ipport.ip << ":" << p.owner.ipport.port << ",[";
-  SetNode<VotePair> *it;
-  for (it = p.set.getFirst(); it != p.set.getLast(); it = p.set.getNext(it)) {
-    ss << VotePair::toString(it->key) << ",";
-  }
-  ss << "]>";
-  return ss.str().c_str();
-}
 
 // ---------------------------- CONSENSUS RPC ----------------------------------
 

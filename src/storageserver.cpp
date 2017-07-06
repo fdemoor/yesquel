@@ -1535,11 +1535,11 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
       case 0: {
         #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %d - %s\n",
-            d->data->inbacId, VotePair::toString(d->data->vote));
+            d->data->inbacId, InbacData::toString(d->data->owner, d->data->vote));
         #endif
         resp->data->type = 1;
         if (inbacData->getPhase() == 0) {
-          int k = inbacData->addVote0(d->data->vote);
+          int k = inbacData->addVote0(d->data->owner, d->data->vote);
           int i = inbacData->getId();
           int n = inbacData->getNNodes();
           int f = inbacData->getF();
@@ -1552,15 +1552,12 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         break;
 
       } case 1: {
-        SetPair *p = new SetPair;
-        p->owner = d->data->owner;
-        p->set = *(d->data->votes);
         #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %d - %s\n",
-            d->data->inbacId, SetPair::toString(*p));
+            d->data->inbacId, InbacData::toString(d->data->owners, d->data->vote));
         #endif
         resp->data->type = 1;
-        inbacData->addVote1(d->data->votes, d->data->owner);
+        inbacData->addVote1(d->data->owners, d->data->vote);
         inbacData->incrCnt();
         int n = inbacData->getCnt();
         int f = inbacData->getF();
@@ -1576,7 +1573,8 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
           printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, "Help");
           #endif
           resp->data->type = 0;
-          resp->data->votes = inbacData->getVote0();
+          resp->data->owners = inbacData->getVote0();
+          resp->data->vote = inbacData->getAnd0();
         }
         break;
 
@@ -1587,6 +1585,9 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
     }
 
   } else {
+    #ifdef TX_DEBUG
+    printf("*** Deliver Event - Missed something of type %d\n", d->data->type);
+    #endif
     resp->data->type = -1;
   }
 

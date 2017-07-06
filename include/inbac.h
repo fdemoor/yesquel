@@ -45,6 +45,9 @@
 #include "gaiarpcaux.h"
 #include "grpctcp.h"
 
+#include <chrono>
+#include <thread>
+
 int inbacTimeoutHandler(void* arg);
 
 struct InbacMessageCallbackData {
@@ -82,9 +85,12 @@ private:
   int phase;
   bool proposed;
   bool decided;
-  Set<VotePair> *collection0;
+  Set<IPPortServerno> *collection0;
+  bool and0;
   Set<SetPair> *collection1;
-  Set<VotePair> *collectionHelp;
+  bool and1;
+  Set<IPPortServerno> *collectionHelp;
+  bool andHelp;
   bool wait;
   bool val;
   bool decision;
@@ -99,11 +105,13 @@ private:
 
   bool checkAllVotes1();
   bool checkBackupVotes1();
-  bool getAndVotes1();
-  BoolPair* checkAllExistVotes1();
+  bool checkAllExistVotes1();
   void addAllVotes1ToVotes0();
+
+  void consensusRescue1();
+  void consensusRescue2();
+
   bool checkHelpVotes();
-  bool getAndHelpVotes();
 
   void tryDelete();
 
@@ -114,13 +122,18 @@ public:
   static int nbTotalAbort;
 
   Semaphore *sem;
-  int inbacId;
   InbacData *prev, *next, *sprev, *snext;
+
+  int inbacId;
+  int GetKey() { return inbacId; }
+
   InbacData() {}
   InbacData(InbacDataParm *parm);
+
   void propose(int vote);
   void decide(bool d);
   void timeoutEvent();
+
   int getPhase() { return phase; }
   int getId() { return id; }
   bool getDecision() { return decision; }
@@ -131,12 +144,16 @@ public:
   int getCntHelp() { return cntHelp; }
   int getF() { return maxNbCrashed; }
   bool waiting() { return wait; }
-  int addVote0(VotePair vote);
-  int addVote0(Set<VotePair> *votes);
-  int addVoteHelp(Set<VotePair> *votes);
-  Set<VotePair>* getVote0() { return collection0; }
-  void addVote1(Set<VotePair> *set, IPPortServerno owner);
-  int GetKey() { return inbacId; }
+
+  int addVote0(IPPortServerno owner, bool vote);
+  int addVote0(Set<IPPortServerno> *owners, bool vote);
+  Set<IPPortServerno>* getVote0() { return collection0; }
+  bool getAnd0() { return and0; }
+
+  void addVote1(Set<IPPortServerno> *owners, bool vote);
+
+  int addVoteHelp(Set<IPPortServerno> *owners, bool vote);
+
   static InbacData* getInbacData(int key);
   static void insertInbacData(InbacData *data);
   static void removeInbacData(InbacData *data);
@@ -146,8 +163,26 @@ public:
       else if (a == b) { return 0; }
       else { return +1; }
   }
+
   void setR1(bool b) { r1 = b; }
   void setR2(bool b) { r2 = b; }
+
+  static const char* toString(IPPortServerno &p, bool b) {
+    std::stringstream ss;
+    ss << "<" << p.ipport.ip << ":" << p.ipport.port;
+    ss << "," << (b ? "true" : "false") << ">";
+    return ss.str().c_str();
+  }
+  static const char* toString(Set<IPPortServerno> *set, bool b) {
+    std::stringstream ss;
+    ss << "<[";
+    SetNode<IPPortServerno> *it;
+    for (it = set->getFirst(); it != set->getLast(); it = set->getNext(it)) {
+      ss << it->key.ipport.ip << ":" << it->key.ipport.port << ", ";
+    }
+    ss << "]," << (b ? "true" : "false") << ">";
+    return ss.str().c_str();
+  }
 
 };
 

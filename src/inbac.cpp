@@ -53,7 +53,7 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
       #endif
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
       if (inbacData->getId() >= inbacData->getF()) {
-        inbacData->addVoteHelp(pcd->data.votes);
+        inbacData->addVoteHelp(pcd->data.owners, pcd->data.vote);
         inbacData->incrCntHelp();
         if ( (inbacData->getCnt() + inbacData->getCntHelp())
           >= (inbacData->getNNodes() - inbacData->getF())
@@ -96,41 +96,35 @@ void InbacData::removeInbacData(InbacData *data) {
   inbacDataObjects->remove(data);
 }
 
-int InbacData::addVote0(VotePair vote) {
-  VotePair *v = new VotePair;
-  v->vote = vote.vote;
-  v->owner = vote.owner;
-  if (!collection0->belongs(*v)) { collection0->insert(*v); }
+int InbacData::addVote0(IPPortServerno owner, bool vote) {
+  if (!collection0->belongs(owner)) { collection0->insert(owner); }
+  and0 = and0 && vote;
   return collection0->getNitems();
 }
 
-int InbacData::addVote0(Set<VotePair> *votes) {
-  SetNode<VotePair> *it;
-  for (it = votes->getFirst(); it != votes->getLast(); it = votes->getNext(it)) {
-    VotePair *v = new VotePair;
-    v->vote = it->key.vote;
-    v->owner = it->key.owner;
-    if (!collection0->belongs(*v)) { collection0->insert(*v); }
+int InbacData::addVote0(Set<IPPortServerno> *owners, bool vote) {
+  SetNode<IPPortServerno> *it;
+  for (it = owners->getFirst(); it != owners->getLast(); it = owners->getNext(it)) {
+    if (!collection0->belongs(it->key)) { collection0->insert(it->key); }
   }
+  and0 = and0 && vote;
   return collection0->getNitems();
 }
 
-int InbacData::addVoteHelp(Set<VotePair> *votes) {
-  SetNode<VotePair> *it;
-  for (it = votes->getFirst(); it != votes->getLast(); it = votes->getNext(it)) {
-    VotePair *v = new VotePair;
-    v->vote = it->key.vote;
-    v->owner = it->key.owner;
-    if (!collection0->belongs(*v)) { collection0->insert(*v); }
-  }
-  return collection0->getNitems();
-}
-
-void InbacData::addVote1(Set<VotePair> *set, IPPortServerno owner) {
+void InbacData::addVote1(Set<IPPortServerno> *owners, bool vote) {
   SetPair *pair = new SetPair;
-  pair->set = *set;
-  pair->owner = owner;
+  pair->set = *owners;
   collection1->insert(*pair);
+  and1 = and1 && vote;
+}
+
+int InbacData::addVoteHelp(Set<IPPortServerno> *owners, bool vote) {
+  SetNode<IPPortServerno> *it;
+  for (it = owners->getFirst(); it != owners->getLast(); it = owners->getNext(it)) {
+    if (!collectionHelp->belongs(it->key)) { collectionHelp->insert(it->key); }
+  }
+  andHelp = andHelp && vote;
+  return collectionHelp->getNitems();
 }
 
 
@@ -167,9 +161,12 @@ InbacData::InbacData(InbacDataParm *parm) {
   phase = 0;
   proposed = false;
   decided = false;
-  collection0 = new Set<VotePair>;
+  collection0 = new Set<IPPortServerno>;
+  and0 = true;
   collection1 = new Set<SetPair>;
-  collectionHelp = new Set<VotePair>;
+  and1 = true;
+  collectionHelp = new Set<IPPortServerno>;
+  andHelp = true;
   wait = false;
   cnt = 0;
   cntHelp = 0;
@@ -197,15 +194,12 @@ void InbacData::propose(int vote) {
   for (it = serverset->getFirst(); i < maxNbCrashed && it != serverset->getLast();
        it = serverset->getNext(it)) {
 
-    VotePair *vote = new VotePair;
-    vote->owner = server;
-    vote->vote = val;
-
     if (IPPortServerno::cmp(it->key, server) != 0) {
 
       InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
       rpcdata->data = new InbacMessageRPCParm;
-      rpcdata->data->vote = *vote;
+      rpcdata->data->vote = val;
+      rpcdata->data->owner = server;
       rpcdata->data->type = 0;
       rpcdata->data->inbacId = inbacId;
 
@@ -219,7 +213,7 @@ void InbacData::propose(int vote) {
 
       i++;
     } else {
-      if (!collection0->belongs(*vote)) { collection0->insert(*vote); }
+      addVote0(server, val);
     }
   }
 
@@ -267,8 +261,8 @@ void InbacData::timeoutEvent0() {
         InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
         rpcdata->data = new InbacMessageRPCParm;
         rpcdata->data->type = 1;
-        rpcdata->data->votes = collection0;
-        rpcdata->data->owner = server;
+        rpcdata->data->owners = collection0;
+        rpcdata->data->vote = and0;
         rpcdata->data->inbacId = inbacId;
         InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
 
@@ -279,7 +273,7 @@ void InbacData::timeoutEvent0() {
                         inbacmessagecallback, imcd);
 
       } else {
-        addVote1(collection0, server);
+        addVote1(collection0, and1);
       }
     }
 
@@ -292,7 +286,8 @@ void InbacData::timeoutEvent0() {
         InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
         rpcdata->data = new InbacMessageRPCParm;
         rpcdata->data->type = 1;
-        rpcdata->data->votes = collection0;
+        rpcdata->data->owners = collection0;
+        rpcdata->data->vote = and0;
         rpcdata->data->owner = server;
         rpcdata->data->inbacId = inbacId;
         InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
@@ -323,50 +318,20 @@ void InbacData::timeoutEvent1() {
     if (id < maxNbCrashed) {
 
       if (checkBackupVotes1()) {
-        decision = getAndVotes1();
+        decision = and1;
         decide(decision);
       } else {
-        BoolPair* check = checkAllExistVotes1();
-        ConsensusData * consData = new ConsensusData(serverset, server, Rpcc, inbacId);
-        if (check->first) {
-          proposal = check->second;
-          proposed = true;
-          #ifdef TX_DEBUG
-          printf("***Consensus1.1 propose %s\n", proposal ? "true" : "false");
-          #endif
-          consData->propose(proposal);
-        } else {
-          proposed = true;
-          #ifdef TX_DEBUG
-          printf("***Consensus1.2 propose false\n");
-          #endif
-          consData->propose(false);
-        }
+        consensusRescue1();
       }
 
     } else {
 
       addAllVotes1ToVotes0();
       if (checkAllVotes1()) {
-        decision = getAndVotes1();
+        decision = and1;
         decide(decision);
       } else if (cnt >= 1) {
-        BoolPair *check = checkAllExistVotes1();
-        ConsensusData * consData = new ConsensusData(serverset, server, Rpcc, inbacId);
-        if (check->first) {
-          proposal = check->second;
-          proposed = true;
-          #ifdef TX_DEBUG
-          printf("***Consensus4.1 propose %s\n", proposal ? "true" : "false");
-          #endif
-          consData->propose(proposal);
-        } else {
-          proposed = true;
-          #ifdef TX_DEBUG
-          printf("***Consensus4.2 propose false\n");
-          #endif
-          consData->propose(false);
-        }
+        consensusRescue1();
       } else {
         wait = true;
         SetNode<IPPortServerno> *it;
@@ -396,41 +361,12 @@ void InbacData::timeoutEvent1() {
 
         wait = false;
         if (checkAllVotes1()) {
-          decision = getAndVotes1();
+          decision = and1;
           decide(decision);
         } else if (cnt >= 1) {
-          BoolPair *check = checkAllExistVotes1();
-          ConsensusData * consData = new ConsensusData(serverset, server, Rpcc, inbacId);
-          if (check->first) {
-            proposal = check->second;
-            proposed = true;
-            #ifdef TX_DEBUG
-            printf("***Consensus2.1 propose %s\n", proposal ? "true" : "false");
-            #endif
-            consData->propose(proposal);
-          } else {
-            proposed = true;
-            #ifdef TX_DEBUG
-            printf("***Consensus2.2 propose false\n");
-            #endif
-            consData->propose(false);
-          }
+          consensusRescue1();
         } else {
-          ConsensusData * consData = new ConsensusData(serverset, server, Rpcc, inbacId);
-          if (checkHelpVotes()) {
-            proposal = getAndHelpVotes();
-            proposed = true;
-            #ifdef TX_DEBUG
-            printf("***Consensus3.1 propose %s\n", proposal ? "true" : "false");
-            #endif
-            consData->propose(proposal);
-          } else {
-            proposed = true;
-            #ifdef TX_DEBUG
-            printf("***Consensus3.2 propose false\n");
-            #endif
-            consData->propose(false);
-          }
+          consensusRescue2();
         }
       }
 
@@ -439,6 +375,36 @@ void InbacData::timeoutEvent1() {
   } else {
     r1 = true;
   }
+}
+
+void InbacData::consensusRescue1() {
+  ConsensusData * consData = new ConsensusData(serverset, server, Rpcc, inbacId);
+  if (checkAllExistVotes1()) {
+    proposal = and1;
+    proposed = true;
+  } else {
+    proposal = false;
+    proposed = true;
+  }
+  #ifdef TX_DEBUG
+  printf("***Consensus1 propose %s\n", proposal ? "true" : "false");
+  #endif
+  consData->propose(proposal);
+}
+
+void InbacData::consensusRescue2() {
+  ConsensusData * consData = new ConsensusData(serverset, server, Rpcc, inbacId);
+  if (checkHelpVotes()) {
+    proposal = andHelp;
+    proposed = true;
+  } else {
+    proposal = false;
+    proposed = true;
+  }
+  #ifdef TX_DEBUG
+  printf("***Consensus2 propose %s\n", proposal ? "true" : "false");
+  #endif
+  consData->propose(proposal);
 }
 
 bool InbacData::checkAllVotes1() {
@@ -466,75 +432,43 @@ bool InbacData::checkBackupVotes1() {
   return foundF;
 }
 
-bool InbacData::getAndVotes1() {
-  SetNode<SetPair> *it = collection1->getFirst();
-  while ( (it->key.set.getNitems() != getNNodes() + 1)
-            && (it != collection1->getLast()) ) {
-    it = collection1->getNext(it);
-  }
-  SetNode<VotePair> *it2;
-  for (it2 = it->key.set.getFirst(); it2 != it->key.set.getLast();
-        it2 = it->key.set.getNext(it2)) {
-    if (!it2->key.vote) { return false; }
-  }
-  return true;
-}
-
-BoolPair* InbacData::checkAllExistVotes1() {
-  BoolPair *result = new BoolPair;
-  Set<VotePair> *values = new Set<VotePair>;
-  bool and1 = true;
+bool InbacData::checkAllExistVotes1() {
+  Set<IPPortServerno> *owners = new Set<IPPortServerno>;
   SetNode<SetPair> *it;
   for (it = collection1->getFirst(); it != collection1->getLast();
         it = collection1->getNext(it)) {
-    SetNode<VotePair> *it2;
+    SetNode<IPPortServerno> *it2;
     for (it2 = it->key.set.getFirst(); it2 != it->key.set.getLast();
           it2 = it->key.set.getNext(it2)) {
-      if (!values->belongs(it2->key)) { values->insert(it2->key); }
-      if (!it2->key.vote) { and1 = false; }
+      if (!owners->belongs(it2->key)) { owners->insert(it2->key); }
+      if (owners->getNitems() == getNNodes()) { return true; }
     }
   }
-  result->first = (values->getNitems() == getNNodes());
+
   #ifdef TX_DEBUG
-  printf("There are %d different values\n", values->getNitems());
-  SetPair *p = new SetPair;
-  p->owner = server;
-  p->set = *values;
-  printf("Values are %s\n", SetPair::toString(*p));
+  printf("There are %d different values\n", owners->getNitems());
   #endif
-  result->second = and1;
-  return result;
+
+  return  false;
 }
 
 void InbacData::addAllVotes1ToVotes0() {
   SetNode<SetPair> *it;
   for (it = collection1->getFirst(); it != collection1->getLast();
         it = collection1->getNext(it)) {
-    addVote0(&(it->key.set));
+    addVote0(&(it->key.set), and1);
   }
-  VotePair *myVote = new VotePair;
-  myVote->owner = server;
-  myVote->vote = val;
-  addVote0(*myVote);
+  addVote0(server, val);
 }
 
 bool InbacData::checkHelpVotes() {
   return (collectionHelp->getNitems() == getNNodes());
 }
 
-bool InbacData::getAndHelpVotes() {
-  SetNode<VotePair> *it;
-  for (it = collectionHelp->getFirst(); it != collectionHelp->getLast();
-        it = collectionHelp->getNext(it)) {
-    if (!it->key.vote) { return false; }
-  }
-  return true;
-}
-
 void InbacData::decide(bool d) {
   if (!decided) {
     if (!d) { InbacData::nbTotalAbort++; }
-    // printf("%d Consensus out of %d transactions, %d aborts\n", InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort);
+    printf("%d Consensus out of %d transactions, %d aborts\n", InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort);
     decided = true;
     #ifdef TX_DEBUG
     printf("*** Decide %s Event - Inbac ID = %d\n", d ? "true" : "false", inbacId);
@@ -564,6 +498,11 @@ void InbacData::decide(bool d) {
 void* startInbac(void *arg_) {
   InbacDataParm *parm = (InbacDataParm*) arg_;
   InbacData *inbacData = new InbacData(parm);
+  // Sleep a little so that other nodes have time to create their InbacData structures
+  // Avoids missed vote messsages and so consensus usage
+  if (inbacData->getId() <= inbacData->getF() ) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(MSG_DELAY / 10));
+  }
   inbacData->propose(parm->vote);
   return NULL;
 }

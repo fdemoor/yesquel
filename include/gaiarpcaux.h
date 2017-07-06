@@ -440,28 +440,14 @@ public:
   void demarshall(char *buf);
 };
 
-struct VotePair {
-  IPPortServerno owner;
-  bool vote;
-  static int cmp(const VotePair &left, const VotePair &right);
-  static const char* toString(VotePair &p);
-};
-
 struct SetPair {
-  IPPortServerno owner;
-  Set<VotePair> set;
+  Set<IPPortServerno> set;
   static int cmp(const SetPair &left, const SetPair &right);
-  static const char* toString(SetPair &p);
-};
-
-struct BoolPair {
-  bool first;
-  bool second;
 };
 
 struct InbacMessageRPCParm {
-  VotePair vote;
-  Set<VotePair> *votes;
+  bool vote;
+  Set<IPPortServerno> *owners;
   IPPortServerno owner;
   int nbVotes;
   int type;     // 0: vote, 1: set of votes, 2: help
@@ -480,7 +466,8 @@ public:
 
 struct InbacMessageRPCResp {
   int type;           // 0: helped, -1:error, else: no callback needed
-  Set<VotePair> *votes;
+  bool vote;
+  Set<IPPortServerno> *owners;
   int nbVotes;
   int inbacId;
 };

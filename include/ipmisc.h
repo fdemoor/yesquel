@@ -7,7 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Marcos K. Aguilera
 
@@ -125,8 +125,8 @@ public:
   static u32 getMyIP(u32 preferip=0, u32 prefermask=0);
 
   // Return printable string for given ip.
-  // Returned value is overwritten on each call.  
-  static char *ipToStr(u32 ip); 
+  // Returned value is overwritten on each call.
+  static char *ipToStr(u32 ip);
 };
 
 #endif

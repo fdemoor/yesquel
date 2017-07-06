@@ -875,7 +875,7 @@ int Transaction::auxinbac(Timestamp committs) {
   InbacRPCData *rpcdata;
   InbacCallbackData *icd;
   LinkList<InbacCallbackData> icdlist(true);
-  int outcome, res;
+  int outcome;
   Set<IPPortServerno> *serverset;
   int hascommitted;
 
@@ -953,7 +953,7 @@ int Transaction::auxinbac(Timestamp committs) {
     printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
     #endif
     icd->sem.wait(INFINITE);
-    if (icd->data.status < 0) res = GAIAERR_SERVER_TIMEOUT; // error contacting
+    if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
                                                             // server
     else {
       outcome = icd->data.decision;
