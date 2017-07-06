@@ -121,7 +121,6 @@ public:
   static int nbTotalCons;
   static int nbTotalAbort;
 
-  Semaphore *sem;
   InbacData *prev, *next, *sprev, *snext;
 
   int inbacId;
@@ -133,6 +132,7 @@ public:
   void propose(int vote);
   void decide(bool d);
   void timeoutEvent();
+  void timeoutEventHelp();
 
   int getPhase() { return phase; }
   int getId() { return id; }

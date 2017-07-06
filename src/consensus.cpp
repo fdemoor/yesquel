@@ -73,6 +73,11 @@ void consmessagecallback(char *data, int len, void *callbackdata) {
 
 
 int consTimeoutHandler(void* arg) {
+  int delay = rand() % CONS_DELAY;
+  struct timespec tim;
+  tim.tv_sec  = 0;
+  tim.tv_nsec = delay * 1000;
+  nanosleep(&tim, NULL);
   ConsensusData *data = (ConsensusData*) arg;
   if (data) { data->timeoutEvent(); }
   return 0;
@@ -122,8 +127,7 @@ ConsensusData::ConsensusData(Set<IPPortServerno> *set, IPPortServerno no, Ptr<RP
 }
 
 void ConsensusData::setTimeout() {
-  int delay = rand() % MSG_DELAY;
-  TaskEventScheduler::AddEvent(tgetThreadNo(), consTimeoutHandler, (ConsensusData*) this, 0, delay + MSG_DELAY);
+  TaskEventScheduler::AddEvent(tgetThreadNo(), consTimeoutHandler, (ConsensusData*) this, 0, 0);
 }
 
 void ConsensusData::propose(bool v) {

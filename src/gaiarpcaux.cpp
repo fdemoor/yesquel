@@ -233,6 +233,7 @@ void InbacRPCRespData::demarshall(char *buf){
 }
 
 int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
+
   assert(maxbufs >= 1);
   int nbBuf = 0;
 

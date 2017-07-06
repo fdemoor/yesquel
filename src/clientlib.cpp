@@ -828,6 +828,10 @@ int Transaction::releaseSubtrans(int level){
 
 int Transaction::tryCommit(Timestamp *retcommitts) {
   int outcome;
+
+  // struct timespec start, end;
+  // clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
 #ifdef INBAC_PROTOCOL
   outcome = tryCommitINBAC(retcommitts);
   TransactionID::incr();
@@ -836,7 +840,12 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
   outcome = tryCommit2PC(retcommitts);
   printf("%s\n", "Using 2PC protocol");
 #endif
+
+  // clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+  // uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+  // printf("Commit protocol took %u µs\n", delta_us);
   fflush(stdout);
+
   return outcome;
 }
 

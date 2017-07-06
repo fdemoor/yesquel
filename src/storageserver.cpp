@@ -1526,7 +1526,12 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
   resp->data = new InbacMessageRPCResp;
   resp->data->inbacId = d->data->inbacId;
 
+
   InbacData *inbacData = InbacData::getInbacData(d->data->inbacId);
+
+  #ifdef TX_DEBUG
+  printf("Deliver message of type %d\n", d->data->type); fflush(stdout);
+  #endif
 
   if (inbacData) {
 
@@ -1585,12 +1590,21 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
     }
 
   } else {
-    #ifdef TX_DEBUG
-    printf("*** Deliver Event - Missed something of type %d\n", d->data->type);
-    #endif
-    resp->data->type = -1;
-  }
 
+    switch (d->data->type) {
+
+      case 2: {
+        resp->data->type = 0;
+        resp->data->owners = new Set<IPPortServerno>;
+        resp->data->vote = false;
+        break;
+      } default: {
+        resp->data->type = -1;
+        break;
+      }
+    }
+
+  }
 
   return resp;
 }

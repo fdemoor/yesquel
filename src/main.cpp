@@ -371,7 +371,7 @@ int main(int argc, char **argv)
   char *loadfilename=0;
   char *logfilename=0;
 
-  srand((unsigned) CONS_PRNG_SEED);
+  srand((unsigned)time(0));
 
   badargs=0;
   while ((c = getopt(argc,argv, "cd:g:l:o:s")) != -1){

@@ -45,7 +45,7 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
     rpcresp.demarshall(data);
     pcd->data = *rpcresp.data;
     #ifdef TX_DEBUG
-    printf("*** Deliver Event - Inbac Id = %d - %d\n", pcd->data.inbacId, pcd->data.type);
+    printf("*** Callback Event - Inbac Id = %d - %d\n", pcd->data.inbacId, pcd->data.type);
     #endif
     if (pcd->data.type == 0) {
       #ifdef TX_DEBUG
@@ -55,9 +55,7 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
       if (inbacData->getId() >= inbacData->getF()) {
         inbacData->addVoteHelp(pcd->data.owners, pcd->data.vote);
         inbacData->incrCntHelp();
-        if ( (inbacData->getCnt() + inbacData->getCntHelp())
-          >= (inbacData->getNNodes() - inbacData->getF())
-          && inbacData->waiting() ) { inbacData->sem->signal(); }
+        inbacData->timeoutEventHelp();
       }
     }
   } else {
@@ -131,7 +129,6 @@ int InbacData::addVoteHelp(Set<IPPortServerno> *owners, bool vote) {
 InbacData::InbacData(InbacDataParm *parm) {
 
   rti = parm->rti;
-  sem = new Semaphore;
   crpcdata = parm->commitData;
   inbacId = parm->k;
   Rpcc = parm->rpc;
@@ -224,11 +221,12 @@ void InbacData::propose(int vote) {
     TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) this, 0, 2 * MSG_DELAY);
     phase = 1;
   }
+
 }
 
 void InbacData::tryDelete() {
-  removeInbacData(this);
-  delete this;
+  // removeInbacData(this);
+  // delete this;
 }
 
 void InbacData::timeoutEvent() {
@@ -338,12 +336,12 @@ void InbacData::timeoutEvent1() {
         int i = 0;
 
         for (it = serverset->getFirst(); it != serverset->getLast();
-             it = serverset->getNext(it), i++) {
+             it = serverset->getNext(it)) {
 
           if (i >= maxNbCrashed && IPPortServerno::cmp(it->key, server) != 0) {
 
             #ifdef TX_DEBUG
-            printf("Sending Help request to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
+            printf("Sending Help request to %u:%u\n", it->key.ipport.ip, it->key.ipport.port); fflush(stdout);
             #endif
 
             InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
@@ -355,25 +353,36 @@ void InbacData::timeoutEvent1() {
             Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
                             inbacmessagecallback, imcd);
           }
+          i++;
         }
 
-        sem->wait(INFINITE);
+        if (id == maxNbCrashed) { cntHelp++; }
 
-        wait = false;
-        if (checkAllVotes1()) {
-          decision = and1;
-          decide(decision);
-        } else if (cnt >= 1) {
-          consensusRescue1();
-        } else {
-          consensusRescue2();
-        }
+        #ifdef TX_DEBUG
+        printf("Waiting for help\n"); fflush(stdout);
+        #endif
+
+        timeoutEventHelp();
+
       }
-
     }
 
   } else {
     r1 = true;
+  }
+}
+
+void InbacData::timeoutEventHelp() {
+  if ( (cnt + cntHelp >= getNNodes() - maxNbCrashed) && wait ) {
+    wait = false;
+    if (checkAllVotes1()) {
+      decision = and1;
+      decide(decision);
+    } else if (cnt >= 1) {
+      consensusRescue1();
+    } else {
+      consensusRescue2();
+    }
   }
 }
 
@@ -466,6 +475,7 @@ bool InbacData::checkHelpVotes() {
 }
 
 void InbacData::decide(bool d) {
+
   if (!decided) {
     if (!d) { InbacData::nbTotalAbort++; }
     printf("%d Consensus out of %d transactions, %d aborts\n", InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort);
@@ -485,24 +495,28 @@ void InbacData::decide(bool d) {
     rti->setResp(resp);
     TaskScheduler *ts = tgetTaskScheduler();
     ts->endTask(rti);
-    #ifdef TX_DEBUG
-    printf("Task %p should end\n", rti);
-    printf("Delete inbac %p\n", this);
-    #endif
 
     if (r2) { tryDelete(); }
 
   }
+
 }
 
 void* startInbac(void *arg_) {
+
   InbacDataParm *parm = (InbacDataParm*) arg_;
   InbacData *inbacData = new InbacData(parm);
+
   // Sleep a little so that other nodes have time to create their InbacData structures
   // Avoids missed vote messsages and so consensus usage
   if (inbacData->getId() <= inbacData->getF() ) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(MSG_DELAY / 10));
+    struct timespec tim;
+    tim.tv_sec  = 0;
+    tim.tv_nsec = 2 * 1000;
+    nanosleep(&tim, NULL);
   }
+
   inbacData->propose(parm->vote);
+
   return NULL;
 }
