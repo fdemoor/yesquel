@@ -851,7 +851,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 
 //---------------------------- INBAC ---------------------------------
 
-int TransactionID::id = 0;
+u64 TransactionID::id = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
   #ifdef TX_DEBUG
@@ -913,7 +913,7 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->tid = Id;
     rpcdata->data->committs = committs;
     rpcdata->data->onephasecommit = hascommitted;
-    rpcdata->data->inbacId = TransactionID::get();
+    rpcdata->data->inbacId = TransactionID::get(UniqueId::getUniqueId());
 
     rpcdata->data->piggy_cid = 0;
     rpcdata->data->piggy_oid = 0;

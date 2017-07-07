@@ -79,16 +79,16 @@ private:
 
   bool r;
 
-  static HashTable<int,ConsensusData> *consDataObjects;
+  static HashTable<u64,ConsensusData> *consDataObjects;
 
 public:
 
   void setTimeout();
   void setR() { r = false; }
-  int consId;
+  u64 consId;
   ConsensusData *prev, *next, *sprev, *snext;
   ConsensusData() {}
-  ConsensusData(Set<IPPortServerno> *set, IPPortServerno no, Ptr<RPCTcp> rpc, int k);
+  ConsensusData(Set<IPPortServerno> *set, IPPortServerno no, Ptr<RPCTcp> rpc, u64 k);
   void propose(bool v);
   void timeoutEvent();
   void lead();
@@ -107,13 +107,13 @@ public:
   bool isStarted() { return started; }
   int getPhase() { return phase; }
   int getNNodes() { return serverset->getNitems(); }
-  int GetKey() { return consId; }
+  u64 GetKey() { return consId; }
   void catchup(int p) { if (p > phase) { phase = p; voted = false; } }
-  static ConsensusData* getConsensusData(int key);
+  static ConsensusData* getConsensusData(u64 key);
   static void insertConsensusData(ConsensusData *data);
   static void removeConsensusData(ConsensusData *data);
-  static int HashKey(int n) { return n; }
-  static int CompareKey(int a, int b) {
+  static int HashKey(u64 n) { return (int) n; }
+  static int CompareKey(u64 a, u64 b) {
       if (a < b) { return -1; }
       else if (a == b) { return 0; }
       else { return +1; }

@@ -318,5 +318,5 @@
 // Sets the seed used to initiliaze PRNG in Consensus module for INBAC
 // /!\ if used, all storage servers have the same seed
 
-//#define TX_DEBUG
+#define TX_DEBUG
 // Sets printing for INBAc debug

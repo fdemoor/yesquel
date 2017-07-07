@@ -1539,7 +1539,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
 
       case 0: {
         #ifdef TX_DEBUG
-        printf("*** Deliver Event - Inbac Id = %d - %s\n",
+        printf("*** Deliver Event - Inbac Id = %lu - %s\n",
             d->data->inbacId, InbacData::toString(d->data->owner, d->data->vote));
         #endif
         resp->data->type = 1;
@@ -1558,7 +1558,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
 
       } case 1: {
         #ifdef TX_DEBUG
-        printf("*** Deliver Event - Inbac Id = %d - %s\n",
+        printf("*** Deliver Event - Inbac Id = %lu - %s\n",
             d->data->inbacId, InbacData::toString(d->data->owners, d->data->vote));
         #endif
         resp->data->type = 1;
@@ -1575,7 +1575,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
       } case 2: {
         if (inbacData->getId() >= inbacData->getF()) {
           #ifdef TX_DEBUG
-          printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, "Help");
+          printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->inbacId, "Help");
           #endif
           resp->data->type = 0;
           resp->data->owners = inbacData->getVote0();
@@ -1619,7 +1619,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
 
     case 0: {
       #ifdef TX_DEBUG
-      printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons xact");
+      printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->consId, "Cons xact");
       #endif
       ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
       int vote;
@@ -1643,7 +1643,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
 
     } case 1: {
       #ifdef TX_DEBUG
-      printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons commit");
+      printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->consId, "Cons commit");
       #endif
       ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
       InbacData *inbacData = InbacData::getInbacData(d->data->consId);
@@ -1659,7 +1659,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
 
     } case 2: {
       #ifdef TX_DEBUG
-      printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->consId, "Cons abort");
+      printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->consId, "Cons abort");
       #endif
       ConsensusData *consData = ConsensusData::getConsensusData(d->data->consId);
       InbacData *inbacData = InbacData::getInbacData(d->data->consId);

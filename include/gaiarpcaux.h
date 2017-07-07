@@ -395,7 +395,7 @@ struct InbacRPCParm {
   Timestamp committs;    // commit timestamp
   int onephasecommit;     // whether to commit as well as prepare
                           // (used when transaction spans just one server)
-  int inbacId;
+  u64 inbacId;
 
   Set<IPPortServerno> *serverset; // set of storage servers
   int nbServers;                  // number of storages servers
@@ -451,7 +451,7 @@ struct InbacMessageRPCParm {
   IPPortServerno owner;
   int nbVotes;
   int type;     // 0: vote, 1: set of votes, 2: help
-  int inbacId;
+  u64 inbacId;
 };
 
 class InbacMessageRPCData : public Marshallable {
@@ -469,7 +469,7 @@ struct InbacMessageRPCResp {
   bool vote;
   Set<IPPortServerno> *owners;
   int nbVotes;
-  int inbacId;
+  u64 inbacId;
 };
 
 class InbacMessageRPCRespData : public Marshallable {
@@ -486,7 +486,7 @@ public:
 
 struct ConsensusMessageRPCParm {
   int type;     // 0: xact, 1: decision commit, 2: decision abort
-  int consId;
+  u64 consId;
   int phase;
 };
 
@@ -502,7 +502,7 @@ public:
 
 struct ConsensusMessageRPCResp {
   int type;           // 0: no, 1: yes, 2: decision ack, -1:error, else: no callback needed;
-  int consId;
+  u64 consId;
 };
 
 class ConsensusMessageRPCRespData : public Marshallable {

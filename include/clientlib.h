@@ -76,14 +76,14 @@ void UninitGaia(StorageConfig *SC);
 
 class TransactionID {
 private:
-  static int id;
+  static u64 id;
 public:
   static void incr() { id++; }
-  static int get(int key) {
-    int x = key + id;
+  static u64 get(u64 key) {
+    u64 x = key + id;
     return (x * x + 3 * key + id) / 2;
   }
-  static int get() { return id; };
+  static u64 get() { return id; };
 };
 
 class Transaction

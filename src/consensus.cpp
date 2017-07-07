@@ -47,7 +47,7 @@ void consmessagecallback(char *data, int len, void *callbackdata) {
     int type = pcd->data.type;
     if (type == 0 ||type == 1) {
       #ifdef TX_DEBUG
-      printf("*** Deliver Event - Consensus Id = %d - %s\n", pcd->data.consId, type == 0 ? "No" : "Yes");
+      printf("*** Deliver Event - Consensus Id = %lu - %s\n", pcd->data.consId, type == 0 ? "No" : "Yes");
       #endif
       if (type == 1) {
         ConsensusData *consData = ConsensusData::getConsensusData(pcd->data.consId);
@@ -89,9 +89,9 @@ int consDeleteHandler(void* arg) {
   return 0;
 }
 
-HashTable<int,ConsensusData>* ConsensusData::consDataObjects = new HashTable<int,ConsensusData>(100);
+HashTable<u64,ConsensusData>* ConsensusData::consDataObjects = new HashTable<u64,ConsensusData>(100);
 
-ConsensusData* ConsensusData::getConsensusData(int key) {
+ConsensusData* ConsensusData::getConsensusData(u64 key) {
   ConsensusData* data = consDataObjects->lookup(key);
   return data;
 }
@@ -105,7 +105,7 @@ void ConsensusData::removeConsensusData(ConsensusData *data) {
 }
 
 
-ConsensusData::ConsensusData(Set<IPPortServerno> *set, IPPortServerno no, Ptr<RPCTcp> rpc, int k) {
+ConsensusData::ConsensusData(Set<IPPortServerno> *set, IPPortServerno no, Ptr<RPCTcp> rpc, u64 k) {
 
   canDelete = false;
   consId = k;
@@ -146,7 +146,7 @@ void ConsensusData::timeoutEvent() {
       tryingLead = true;
 
       #ifdef TX_DEBUG
-      printf("*** Timeout Event - Inbac ID = %d - Consensus Round = %d\n", consId, phase);
+      printf("*** Timeout Event - Inbac ID = %lu - Consensus Round = %d\n", consId, phase);
       #endif
 
       SetNode<IPPortServerno> *it;

@@ -45,11 +45,11 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
     rpcresp.demarshall(data);
     pcd->data = *rpcresp.data;
     #ifdef TX_DEBUG
-    printf("*** Callback Event - Inbac Id = %d - %d\n", pcd->data.inbacId, pcd->data.type);
+    printf("*** Callback Event - Inbac Id = %lu - %d\n", pcd->data.inbacId, pcd->data.type);
     #endif
     if (pcd->data.type == 0) {
       #ifdef TX_DEBUG
-      printf("*** Deliver Event - Inbac Id = %d - %s\n", pcd->data.inbacId, "Helped");
+      printf("*** Deliver Event - Inbac Id = %lu - %s\n", pcd->data.inbacId, "Helped");
       #endif
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
       if (inbacData->getId() >= inbacData->getF()) {
@@ -69,19 +69,19 @@ int inbacTimeoutHandler(void* arg) {
   InbacData *data = (InbacData*) arg;
   if (data) {
     #ifdef TX_DEBUG
-    printf("Timeout Event - Inbac Id = %d\n", data->GetKey());
+    printf("Timeout Event - Inbac Id = %lu\n", data->GetKey());
     #endif
     data->timeoutEvent();
   }
   return 0;
 }
 
-HashTable<int,InbacData>* InbacData::inbacDataObjects = new HashTable<int,InbacData>(100);
+HashTable<u64,InbacData>* InbacData::inbacDataObjects = new HashTable<u64,InbacData>(100);
 int InbacData::nbTotalTx = 0;
 int InbacData::nbTotalCons = 0;
 int InbacData::nbTotalAbort = 0;
 
-InbacData* InbacData::getInbacData(int key) {
+InbacData* InbacData::getInbacData(u64 key) {
   InbacData* data = inbacDataObjects->lookup(key);
   return data;
 }
@@ -177,7 +177,7 @@ void InbacData::propose(int vote) {
   InbacData::nbTotalTx++;
 
   #ifdef TX_DEBUG
-  printf("*** Propose %s Event - Inbac ID = %d\n",
+  printf("*** Propose %s Event - Inbac ID = %lu\n",
     (vote == 0) ? "true" : "false", inbacId);
   printf("Inbac is %p\n", this);
   #endif
@@ -243,7 +243,7 @@ void InbacData::timeoutEvent() {
 void InbacData::timeoutEvent0() {
 
   #ifdef TX_DEBUG
-  printf("*** Timeout 0 Event - Inbac ID = %d\n", inbacId);
+  printf("*** Timeout 0 Event - Inbac ID = %lu\n", inbacId);
   printf("Inbac is %p\n", this);
   #endif
 
@@ -309,7 +309,7 @@ void InbacData::timeoutEvent1() {
   if (r1) {
 
     #ifdef TX_DEBUG
-    printf("*** Timeout 1 Event - Inbac ID = %d\n", inbacId);
+    printf("*** Timeout 1 Event - Inbac ID = %lu\n", inbacId);
     #endif
 
     phase = 2;
@@ -483,7 +483,7 @@ void InbacData::decide(bool d) {
     }
     decided = true;
     #ifdef TX_DEBUG
-    printf("*** Decide %s Event - Inbac ID = %d\n", d ? "true" : "false", inbacId);
+    printf("*** Decide %s Event - Inbac ID = %lu\n", d ? "true" : "false", inbacId);
     #endif
     crpcdata->data->commit = d ? 0 : 1;
     CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);

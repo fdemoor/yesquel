@@ -61,7 +61,7 @@ struct InbacDataParm {
   InbacRPCParm *parm;
   IPPort ipport;
   Ptr<RPCTcp> rpc;
-  int k;
+  u64 k;
   int vote;
   CommitRPCData *commitData;
   RPCTaskInfo *rti;
@@ -98,7 +98,7 @@ private:
   int cnt;
   int cntHelp;
 
-  static HashTable<int,InbacData> *inbacDataObjects;
+  static HashTable<u64,InbacData> *inbacDataObjects;
 
   void timeoutEvent0();
   void timeoutEvent1();
@@ -123,8 +123,8 @@ public:
 
   InbacData *prev, *next, *sprev, *snext;
 
-  int inbacId;
-  int GetKey() { return inbacId; }
+  u64 inbacId;
+  u64 GetKey() { return inbacId; }
 
   InbacData() {}
   InbacData(InbacDataParm *parm);
@@ -154,11 +154,11 @@ public:
 
   int addVoteHelp(Set<IPPortServerno> *owners, bool vote);
 
-  static InbacData* getInbacData(int key);
+  static InbacData* getInbacData(u64 key);
   static void insertInbacData(InbacData *data);
   static void removeInbacData(InbacData *data);
-  static int HashKey(int n) { return n; }
-  static int CompareKey(int a, int b) {
+  static int HashKey(u64 n) { return (int) n; }
+  static int CompareKey(u64 a, u64 b) {
       if (a < b) { return -1; }
       else if (a == b) { return 0; }
       else { return +1; }
