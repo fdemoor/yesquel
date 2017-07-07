@@ -478,7 +478,9 @@ void InbacData::decide(bool d) {
 
   if (!decided) {
     if (!d) { InbacData::nbTotalAbort++; }
-    printf("%d Consensus out of %d transactions, %d aborts\n", InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort);
+    if (InbacData::nbTotalTx % 300 == 0) {
+      printf("%d Consensus out of %d transactions, %d aborts\n", InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort);
+    }
     decided = true;
     #ifdef TX_DEBUG
     printf("*** Decide %s Event - Inbac ID = %d\n", d ? "true" : "false", inbacId);

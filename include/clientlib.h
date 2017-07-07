@@ -79,7 +79,11 @@ private:
   static int id;
 public:
   static void incr() { id++; }
-  static int get() { return id; }
+  static int get(int key) {
+    int x = key + id;
+    return (x * x + 3 * key + id) / 2;
+  }
+  static int get() { return id; };
 };
 
 class Transaction

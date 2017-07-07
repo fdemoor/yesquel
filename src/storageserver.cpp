@@ -1573,14 +1573,14 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         break;
 
       } case 2: {
-        if (inbacData->getPhase() == 2 && inbacData->getId() >= inbacData->getF()) {
+        if (inbacData->getId() >= inbacData->getF()) {
           #ifdef TX_DEBUG
           printf("*** Deliver Event - Inbac Id = %d - %s\n", d->data->inbacId, "Help");
           #endif
           resp->data->type = 0;
           resp->data->owners = inbacData->getVote0();
           resp->data->vote = inbacData->getAnd0();
-        }
+        } else { resp->data->type = -1; }
         break;
 
       } default: {
