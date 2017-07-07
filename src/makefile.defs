@@ -1,4 +1,4 @@
-CXX=g++
+CXX=g++-5
 INCLUDEDIR=../include
 
 LINK.o = $(LINK.cc)
