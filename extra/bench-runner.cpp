@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -164,7 +164,7 @@ class RandomWrapper {
    const std::string &PickRandomField(int curr_index);
    int GetRandomInt(int min, int max);
    void SetSeed(unsigned seed){_generator.seed(seed);}
-  
+
 protected:
    std::default_random_engine _generator;
 
@@ -208,7 +208,7 @@ public:
   int GetIndex(std::default_random_engine& engine){
     if (_order == 0.0) return _uniform_distribution(engine);
 
-    double p = _distribution(engine); 
+    double p = _distribution(engine);
     auto pos = std::lower_bound(_discretized_cdf.cbegin(), _discretized_cdf.cend(), p);
     return static_cast<int>(std::distance(_discretized_cdf.cbegin(), pos));
   }
@@ -218,7 +218,7 @@ public:
       LOG("%lld: %f\n", std::distance(_discretized_cdf.cbegin(), i), *i);
     }
   }
-  
+
 private:
   // Formula for calucalting GHN from wikipedia
   double getNextGeneralizedHarmonicNumber(){
@@ -277,7 +277,7 @@ private:
   ExperimentState(const ExperimentState&);
   ExperimentState& operator=(const ExperimentState&);
 
-  
+
   long long get_interval(){
     return std::chrono::duration_cast<std::chrono::seconds>(windows_clock::now() - _start_time).count();
   }
@@ -296,7 +296,7 @@ class Timer {
 public:
   Timer(ExperimentState& es, const char* place) :
     _start(windows_clock::now()), _es(es),
-    _loc(place), _record(true){ 
+    _loc(place), _record(true){
   }
 
   void Cancel(){
@@ -330,15 +330,15 @@ struct Parameters {
     sync = conf->get<bool>("sync", true);
     scan_max = conf->get<int>("max_scan", 5);
     lead_time = conf->get<int>("lead-time", 120);
-    syncfilepost = conf->get<std::string>("syncfilepost", ""); 
-    syncfilewait = conf->get<std::string>("syncfilewait", ""); 
+    syncfilepost = conf->get<std::string>("syncfilepost", "");
+    syncfilewait = conf->get<std::string>("syncfilewait", "");
     warmup = conf->get<int>("warmup", 15);
     cooldown = conf->get<int>("cooldown", 15);
     txn_ops = conf->get<int>("txn_ops", 4);
     seed = conf->get<int>("seed", 1012013);
     wiki_mix = conf->get<int>("wiki-mix", 95);
   }
-    
+
   int nTuples;
   int max_fields;
   int key_len;
@@ -469,7 +469,7 @@ const std::string &RandomWrapper::PickRandomField(int curr_index){
   }
   */
   static const std::string& field("FIELD0");
-  
+
   return field;
 }
 
@@ -534,7 +534,7 @@ static int do_scan_update(ExperimentState& state, ClientPtr clp, int max_fields,
   std::vector<ValueMap> result;
   int rc;
   int nFields = state.getRandom().GetRandomInt(1, max_fields + 1);
-  
+
   for (auto i = 0; i < nFields; ++i){
     fields.push_back(state.getRandom().PickRandomField(i));
   }
@@ -551,7 +551,7 @@ static int do_scan_update(ExperimentState& state, ClientPtr clp, int max_fields,
     }
     rc  = clp->insert(TableId(TABLENAME), key2, towrite);
   }
-  
+
   if (rc) t.Cancel();
   return rc;
 }
@@ -1246,7 +1246,7 @@ bool synchronize(ClientPtr clp, const Parameters* param, const std::string& expS
   } else {
     LOG("FATAL ERROR, DIDN'T GET START TIME UNTIL THE FUTURE\n");
     LOG("Start time is: %s, seems funny, so I'm bailing\n", ctime(&s_time));
-    return true;
+    // return true;
   }
   return false;
 }
@@ -1388,7 +1388,7 @@ int RunWorkload(ClientPtr clp, Workload w, const Config* conf){
   unsigned seed;
   int workerno;
   // Barrier for synchronization: all threads will wait until the first one has finished
-  // synchronizing. The last thread will reset the count so the next experiment can 
+  // synchronizing. The last thread will reset the count so the next experiment can
   // synchronize.
   {
     std::lock_guard<std::mutex> lock(sync_mutex);
@@ -1493,5 +1493,3 @@ int RunWorkload(ClientPtr clp, Workload w, const Config* conf){
     return -1;
   }
 }
-
-

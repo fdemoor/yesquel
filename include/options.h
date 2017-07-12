@@ -301,14 +301,14 @@
 
 #endif
 
-#define INBAC_PROTOCOL
+//#define INBAC_PROTOCOL
 // If set, use INBAC as commit protocol for non-local transactions
 // otherwise, use two-phase commit (2PC)
 
 #define MSG_DELAY 2
 // Sets the message delay (ms) used for INBAC protocol
 
-#define CONS_DELAY 100
+#define CONS_DELAY 150
 // Sets the delay used (µs) for Raft consensus
 
 #define MAX_NB_CRASHED 1
@@ -318,5 +318,5 @@
 // Sets the seed used to initiliaze PRNG in Consensus module for INBAC
 // /!\ if used, all storage servers have the same seed
 
-#define TX_DEBUG
+//#define TX_DEBUG
 // Sets printing for INBAc debug

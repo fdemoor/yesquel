@@ -18,7 +18,7 @@
     "leader" : "localhost"
   },
   "Workload H 1" : {
-    "load" : 1,
+    "load" : 0,
     "firstkey" : 1,
     "threads" : 1,
     "workload" : "H"
