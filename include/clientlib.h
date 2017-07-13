@@ -86,6 +86,59 @@ public:
   static u64 get() { return id; };
 };
 
+class InbacWait {
+
+private:
+
+  static HashTable<u64,InbacWait> *inbacWaitObjects;
+
+  Semaphore *sem;
+  int cnt;
+  int max;
+
+
+public:
+  void *icd;
+  InbacWait *prev, *next, *sprev, *snext;
+  u64 inbacId;
+  InbacWait() {}
+  InbacWait(u64 key, int m) {
+    sem = new Semaphore;
+    cnt = 0;
+    inbacId = key;
+    max = m;
+    inbacWaitObjects->insert(this);
+  }
+  static InbacWait* getInbacWait(u64 key) { return inbacWaitObjects->lookup(key); }
+  u64 GetKey() { return inbacId; }
+  static int HashKey(u64 n) { return (int) n; }
+  static int CompareKey(u64 a, u64 b) {
+      if (a < b) { return -1; }
+      else if (a == b) { return 0; }
+      else { return +1; }
+  }
+
+  bool wait(int ms) {
+    #ifdef TX_DEBUG
+    printf("Waiting on semaphore %p\n", sem); fflush(stdout);
+    #endif
+    return sem->wait(ms);
+  }
+
+  void signal(void *data) {
+    #ifdef TX_DEBUG
+    printf("Signal semaphore %p\n", sem); fflush(stdout);
+    #endif
+    int x = (max == 1) ? 0 : 1;
+    if (cnt == x) {
+      icd = data;
+      sem->signal();
+    }
+    cnt++;
+    if (cnt == max) { inbacWaitObjects->remove(this); delete this; }
+  }
+};
+
 class Transaction
 {
 private:
@@ -171,9 +224,9 @@ private:
   //---------------------------- INBAC -----------------------------------------
 
   struct InbacCallbackData {
-    Semaphore sem; // to wait for response
     int serverno;
     InbacRPCResp data;
+    u64 inbacId;
     InbacCallbackData *prev, *next; // linklist stuff
   };
 

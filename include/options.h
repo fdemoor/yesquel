@@ -301,7 +301,7 @@
 
 #endif
 
-//#define INBAC_PROTOCOL
+#define INBAC_PROTOCOL
 // If set, use INBAC as commit protocol for non-local transactions
 // otherwise, use two-phase commit (2PC)
 

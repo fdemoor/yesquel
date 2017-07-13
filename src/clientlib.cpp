@@ -76,6 +76,8 @@ void UninitGaia(StorageConfig *SC){
   if (SC) delete SC;
 }
 
+HashTable<u64,InbacWait>* InbacWait::inbacWaitObjects = new HashTable<u64,InbacWait>(100);
+
 Transaction::Transaction(StorageConfig *sc)
 {
   readsTxCached = 0;
@@ -855,7 +857,7 @@ u64 TransactionID::id = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
   #ifdef TX_DEBUG
-  printf("Got an answer !\n"); fflush(stdout);
+  printf("Got a callback !\n"); fflush(stdout);
   #endif
   InbacCallbackData *icd = (InbacCallbackData*) callbackdata;
   InbacRPCRespData rpcresp;
@@ -865,10 +867,10 @@ void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
   } else {
     icd->data.decision = -1;   // indicates an error
   }
-  #ifdef TX_DEBUG
-  printf("Signal semaphore %p\n", &(icd->sem));
-  #endif
-  icd->sem.signal();
+
+  InbacWait *waitdata = InbacWait::getInbacWait(icd->inbacId);
+  if (waitdata) { waitdata->signal((void*) icd); }
+
   return; // free buffer
 }
 
@@ -901,6 +903,9 @@ int Transaction::auxinbac(Timestamp committs) {
   hascommitted = 0;
 #endif
 
+  u64 key = TransactionID::get(UniqueId::getUniqueId());
+  InbacWait *waitdata = new InbacWait(key, serverset->getNitems());
+
   for (it = serverset->getFirst(); it != serverset->getLast();
        it = serverset->getNext(it)) {
     server = it->key;
@@ -913,7 +918,7 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->tid = Id;
     rpcdata->data->committs = committs;
     rpcdata->data->onephasecommit = hascommitted;
-    rpcdata->data->inbacId = TransactionID::get(UniqueId::getUniqueId());
+    rpcdata->data->inbacId = key;
 
     rpcdata->data->piggy_cid = 0;
     rpcdata->data->piggy_oid = 0;
@@ -928,6 +933,7 @@ int Transaction::auxinbac(Timestamp committs) {
 
     icd = new InbacCallbackData;
     icd->serverno = server.serverno;
+    icd->inbacId = key;
     icdlist.pushTail(icd);
 
     Sc->Rpcc->asyncRPC(server.ipport, INBAC_RPCNO,
@@ -937,44 +943,44 @@ int Transaction::auxinbac(Timestamp committs) {
   }
 
   #ifdef TX_DEBUG
-  printf("%d callback in list, for %d servers\n", icdlist.getNitems(), serverset->getNitems());
+  printf("%d callback(s) in list, for %d server(s)\n", icdlist.getNitems(), serverset->getNitems());
   #endif
 
-  // Wait until at least one node ended the protocol
-  // icd = icdlist.getFirst();
-  // int done = 1;
-  // while (done) {
-  //   printf("hello\n");
-  //   if (icd == icdlist.getLast()) {
-  //     icd = icdlist.getFirst();
-  //   } else {
-  //     printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
-  //     if (!(icd->sem.wait(MSG_DELAY / serverset->getNitems()))) {
-  //       done = 0;
-  //     }
-  //     icd = icdlist.getNext(icd);
-  //   }
-  // }
-
-  for (icd = icdlist.getFirst(); icd != icdlist.getLast();
-       icd = icdlist.getNext(icd)){
-    #ifdef TX_DEBUG
-    printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
-    #endif
-    icd->sem.wait(INFINITE);
-    if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
-                                                            // server
-    else {
-      outcome = icd->data.decision;
-      if ( !icd->data.committs.isIllegal() &&
-          Timestamp::cmp(icd->data.committs, committs) > 0){
-        committs = icd->data.committs; // update largest waitingts found
-      }
+  waitdata->wait(INFINITE);
+  icd = (InbacCallbackData*) waitdata->icd;
+  if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
+                                                              // server
+  else {
+    outcome = icd->data.decision;
+    if ( !icd->data.committs.isIllegal() &&
+        Timestamp::cmp(icd->data.committs, committs) > 0){
+      committs = icd->data.committs; // update largest waitingts found
     }
-    #ifdef TX_DEBUG
-    printf("Done !\n"); fflush(stdout);
-    #endif
   }
+
+  #ifdef TX_DEBUG
+  printf("Done !\n"); fflush(stdout);
+  #endif
+
+  // for (icd = icdlist.getFirst(); icd != icdlist.getLast();
+  //      icd = icdlist.getNext(icd)){
+  //   #ifdef TX_DEBUG
+  //   printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
+  //   #endif
+  //   icd->sem.wait(INFINITE);
+  //   if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
+  //                                                           // server
+  //   else {
+  //     outcome = icd->data.decision;
+  //     if ( !icd->data.committs.isIllegal() &&
+  //         Timestamp::cmp(icd->data.committs, committs) > 0){
+  //       committs = icd->data.committs; // update largest waitingts found
+  //     }
+  //   }
+  //   #ifdef TX_DEBUG
+  //   printf("Done !\n"); fflush(stdout);
+  //   #endif
+  // }
 
   return outcome;
 
