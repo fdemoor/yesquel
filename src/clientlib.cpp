@@ -76,8 +76,6 @@ void UninitGaia(StorageConfig *SC){
   if (SC) delete SC;
 }
 
-HashTable<u64,InbacWait>* InbacWait::inbacWaitObjects = new HashTable<u64,InbacWait>(100);
-
 Transaction::Transaction(StorageConfig *sc)
 {
   readsTxCached = 0;
@@ -856,21 +854,22 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 u64 TransactionID::id = 0;
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
-  #ifdef TX_DEBUG
-  printf("Got a callback !\n"); fflush(stdout);
-  #endif
+
   InbacCallbackData *icd = (InbacCallbackData*) callbackdata;
-  InbacRPCRespData rpcresp;
-  if (data){
-    rpcresp.demarshall(data);
-    icd->data = *rpcresp.data;
-  } else {
-    icd->data.decision = -1;   // indicates an error
+  if (icd->toSignal) {
+    InbacRPCRespData rpcresp;
+    if (data){
+      rpcresp.demarshall(data);
+      icd->data = *rpcresp.data;
+    } else {
+      icd->data.decision = -1;   // indicates an error
+    }
+    #ifdef TX_DEBUG
+    printf("Signal semaphore %p\n", &(icd->sem)); fflush(stdout);
+    #endif
+    icd->sem.signal();
+    icd->toSignal = false;
   }
-
-  InbacWait *waitdata = InbacWait::getInbacWait(icd->inbacId);
-  if (waitdata) { waitdata->signal((void*) icd); }
-
   return; // free buffer
 }
 
@@ -885,7 +884,6 @@ int Transaction::auxinbac(Timestamp committs) {
   SetNode<IPPortServerno> *it;
   InbacRPCData *rpcdata;
   InbacCallbackData *icd;
-  LinkList<InbacCallbackData> icdlist(true);
   int outcome;
   Set<IPPortServerno> *serverset;
   int hascommitted;
@@ -904,7 +902,9 @@ int Transaction::auxinbac(Timestamp committs) {
 #endif
 
   u64 key = TransactionID::get(UniqueId::getUniqueId());
-  InbacWait *waitdata = new InbacWait(key, serverset->getNitems());
+
+  icd = new InbacCallbackData;
+  icd->toSignal = true;
 
   for (it = serverset->getFirst(); it != serverset->getLast();
        it = serverset->getNext(it)) {
@@ -931,11 +931,6 @@ int Transaction::auxinbac(Timestamp committs) {
 
     rpcdata->data->serverset = serverset;
 
-    icd = new InbacCallbackData;
-    icd->serverno = server.serverno;
-    icd->inbacId = key;
-    icdlist.pushTail(icd);
-
     Sc->Rpcc->asyncRPC(server.ipport, INBAC_RPCNO,
                        FLAG_HID(TID_TO_RPCHASHID(Id)), rpcdata,
                        auxinbaccallback, icd);
@@ -943,11 +938,11 @@ int Transaction::auxinbac(Timestamp committs) {
   }
 
   #ifdef TX_DEBUG
-  printf("%d callback(s) in list, for %d server(s)\n", icdlist.getNitems(), serverset->getNitems());
+  printf("Transaction involves %d server(s)\n", serverset->getNitems());
+  printf("Wait on semaphore %p\n", &(icd->sem)); fflush(stdout);
   #endif
 
-  waitdata->wait(INFINITE);
-  icd = (InbacCallbackData*) waitdata->icd;
+  icd->sem.wait(INFINITE);
   if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
                                                               // server
   else {
@@ -959,7 +954,7 @@ int Transaction::auxinbac(Timestamp committs) {
   }
 
   #ifdef TX_DEBUG
-  printf("Done !\n"); fflush(stdout);
+  printf("Transaction done\n"); fflush(stdout);
   #endif
 
   // for (icd = icdlist.getFirst(); icd != icdlist.getLast();
