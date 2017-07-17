@@ -452,6 +452,7 @@ struct InbacMessageRPCParm {
   int nbVotes;
   int type;     // 0: vote, 1: set of votes, 2: help
   u64 inbacId;
+  InbacMessageRPCParm *prev, *next;
 };
 
 class InbacMessageRPCData : public Marshallable {

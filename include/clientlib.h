@@ -86,6 +86,38 @@ public:
   static u64 get() { return id; };
 };
 
+class TransactionStat {
+private:
+  int* headcounts;
+  double* durations;
+  int size;
+public:
+  TransactionStat(int n) {
+    size = n;
+    headcounts = new int[size];
+    durations = new double[size];
+    for (int i = 0; i < size; i++) {
+      headcounts[i] = 0;
+      durations[i] = 0;
+    }
+  }
+  ~TransactionStat() {
+    delete[] headcounts;
+    delete[] durations;
+  }
+  void add(int n, double t) {
+    headcounts[n-1]++;
+    durations[n-1] += t;
+  }
+  void print(int k) {
+    printf("Transactions: ");
+    for (int i = 0; i < size; i++) {
+      printf("%d (%d, %g, %g) ", i+1, headcounts[i], durations[i], durations[i] / headcounts[i]);
+    }
+    printf("\n"); fflush(stdout);
+  }
+};
+
 class Transaction
 {
 private:
@@ -319,6 +351,8 @@ public:
 
   // try to abort
   int abort(void);
+
+  static TransactionStat *stat;
 };
 
 #endif

@@ -1543,17 +1543,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
             d->data->inbacId, InbacData::toString(d->data->owner, d->data->vote));
         #endif
         resp->data->type = 1;
-        if (inbacData->getPhase() == 0) {
-          int k = inbacData->addVote0(d->data->owner, d->data->vote);
-          int i = inbacData->getId();
-          int n = inbacData->getNNodes();
-          int f = inbacData->getF();
-          if ( (i < f && k == n) ||
-                (i == f && k == f) ) {
-            inbacData->setR1(false);
-            TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
-          }
-        }
+        inbacData->deliver0(d->data->owner, d->data->vote);
         break;
 
       } case 1: {
@@ -1562,14 +1552,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
             d->data->inbacId, InbacData::toString(d->data->owners, d->data->vote));
         #endif
         resp->data->type = 1;
-        inbacData->addVote1(d->data->owners, d->data->vote);
-        inbacData->incrCnt();
-        int n = inbacData->getCnt();
-        int f = inbacData->getF();
-        if (n == f) {
-          inbacData->setR2(false);
-          TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, inbacData, 0, 0);
-        }
+        inbacData->deliver1(d->data->owners, d->data->vote);
         break;
 
       } case 2: {
@@ -1592,14 +1575,27 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
   } else {
 
     switch (d->data->type) {
-
-      case 2: {
+      case 0:
+      case 1: {
+        resp->data->type = 1;
+        #ifdef TX_DEBUG_2
+        printf("*** Msg stored in queue - Inbac Id = %lu - Type %d\n", d->data->inbacId, d->data->type);
+        #endif
+        InbacMessageRPCParm *msg = new InbacMessageRPCParm;
+        msg->vote = d->data->vote;
+        msg->owners = d->data->owners;
+        msg->owner = d->data->owner;
+        msg->type = d->data->type;
+        msg->inbacId = d->data->inbacId;
+        InbacData::addMsgQueue(msg);
+        break;
+      } case 2: {
         resp->data->type = 0;
         resp->data->owners = new Set<IPPortServerno>;
         resp->data->vote = false;
         break;
       } default: {
-        resp->data->type = -1;
+        resp->data->type = -1; // Should not happen
         break;
       }
     }

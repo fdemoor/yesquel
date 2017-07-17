@@ -79,8 +79,8 @@ private:
   int maxNbCrashed;
   RPCTaskInfo *rti;
 
-  bool r1;
-  bool r2;
+  bool t0;
+  bool t1;
 
   int phase;
   bool proposed;
@@ -100,8 +100,14 @@ private:
 
   static HashTable<u64,InbacData> *inbacDataObjects;
 
+  static LinkList<InbacMessageRPCParm> *msgQueue;
+
   void timeoutEvent0();
   void timeoutEvent1();
+
+  int addVote0(IPPortServerno owner, bool vote);
+  int addVote0(Set<IPPortServerno> *owners, bool vote);
+  void addVote1(Set<IPPortServerno> *owners, bool vote);
 
   bool checkAllVotes1();
   bool checkBackupVotes1();
@@ -120,6 +126,8 @@ public:
   static int nbTotalTx;
   static int nbTotalCons;
   static int nbTotalAbort;
+  static int nbSpeedUp0;
+  static int nbSpeedUp1;
 
   InbacData *prev, *next, *sprev, *snext;
 
@@ -131,26 +139,21 @@ public:
 
   void propose(int vote);
   void decide(bool d);
-  void timeoutEvent();
+  void timeoutEvent(int type);
   void timeoutEventHelp();
+  void deliver0(IPPortServerno owner, bool vote);
+  void deliver1(Set<IPPortServerno> *owners, bool vote);
 
   int getPhase() { return phase; }
   int getId() { return id; }
   bool getDecision() { return decision; }
   int getNNodes() { return serverset->getNitems(); }
-  void incrCnt() { cnt++;  }
   void incrCntHelp() { cntHelp++;  }
-  int getCnt() { return cnt; }
-  int getCntHelp() { return cntHelp; }
   int getF() { return maxNbCrashed; }
   bool waiting() { return wait; }
 
-  int addVote0(IPPortServerno owner, bool vote);
-  int addVote0(Set<IPPortServerno> *owners, bool vote);
   Set<IPPortServerno>* getVote0() { return collection0; }
   bool getAnd0() { return and0; }
-
-  void addVote1(Set<IPPortServerno> *owners, bool vote);
 
   int addVoteHelp(Set<IPPortServerno> *owners, bool vote);
 
@@ -164,15 +167,13 @@ public:
       else { return +1; }
   }
 
-  void setR1(bool b) { r1 = b; }
-  void setR2(bool b) { r2 = b; }
-
   static const char* toString(IPPortServerno &p, bool b) {
     std::stringstream ss;
     ss << "<" << p.ipport.ip << ":" << p.ipport.port;
     ss << "," << (b ? "true" : "false") << ">";
     return ss.str().c_str();
   }
+
   static const char* toString(Set<IPPortServerno> *set, bool b) {
     std::stringstream ss;
     ss << "<[";
@@ -184,6 +185,13 @@ public:
     return ss.str().c_str();
   }
 
+  static void addMsgQueue(InbacMessageRPCParm* msg) { msgQueue->pushHead(msg); }
+
+};
+
+struct InbacTimeoutData {
+  InbacData *data;
+  int type;
 };
 
 void* startInbac(void *arg_);

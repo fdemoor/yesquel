@@ -829,22 +829,24 @@ int Transaction::releaseSubtrans(int level){
 int Transaction::tryCommit(Timestamp *retcommitts) {
   int outcome;
 
-  // struct timespec start, end;
-  // clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
 #ifdef INBAC_PROTOCOL
   outcome = tryCommitINBAC(retcommitts);
   TransactionID::incr();
-  printf("%s\n", "Using INBAC protocol");
+  // printf("%s\n", "Using INBAC protocol");
 #else
   outcome = tryCommit2PC(retcommitts);
-  printf("%s\n", "Using 2PC protocol");
+  // printf("%s\n", "Using 2PC protocol");
 #endif
 
-  // clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-  // uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-  // printf("Commit protocol took %u µs\n", delta_us);
-  fflush(stdout);
+  clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+  uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+  Transaction::stat->add(Servers.getNitems(), (double) delta_us);
+  Transaction::stat->print(300);
+  // printf("Commit protocol took %lu µs\n", delta_us);
+  // fflush(stdout);
 
   return outcome;
 }
@@ -852,6 +854,9 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 //---------------------------- INBAC ---------------------------------
 
 u64 TransactionID::id = 0;
+
+TransactionStat* Transaction::stat = new TransactionStat(3);
+
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
 
@@ -937,9 +942,9 @@ int Transaction::auxinbac(Timestamp committs) {
 
   }
 
-  #ifdef TX_DEBUG
-  printf("Transaction involves %d server(s)\n", serverset->getNitems());
-  printf("Wait on semaphore %p\n", &(icd->sem)); fflush(stdout);
+  #ifdef TX_DEBUG_2
+  // printf("Transaction involves %d server(s)\n", serverset->getNitems());
+  // printf("Wait on semaphore %p\n", &(icd->sem)); fflush(stdout);
   #endif
 
   icd->sem.wait(INFINITE);
