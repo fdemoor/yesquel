@@ -447,6 +447,7 @@ struct SetPair {
 
 struct InbacMessageRPCParm {
   bool vote;
+  bool all;
   Set<IPPortServerno> *owners;
   IPPortServerno owner;
   int nbVotes;

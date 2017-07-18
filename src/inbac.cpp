@@ -113,9 +113,10 @@ void InbacData::deliver0(IPPortServerno owner, bool vote) {
   }
 }
 
-void InbacData::deliver1(Set<IPPortServerno> *owners, bool vote) {
+void InbacData::deliver1(Set<IPPortServerno> *owners, bool vote, bool all) {
   addVote1(owners, vote);
   cnt++;
+  all1 = all1 && all;
   if (cnt == maxNbCrashed) {
     InbacData::nbSpeedUp1++;
     InbacTimeoutData *timeoutData = new InbacTimeoutData;
@@ -193,6 +194,7 @@ InbacData::InbacData(InbacDataParm *parm) {
   and0 = true;
   collection1 = new Set<SetPair>;
   and1 = true;
+  all1 = true;
   collectionHelp = new Set<IPPortServerno>;
   andHelp = true;
   wait = false;
@@ -278,7 +280,7 @@ void InbacData::propose(int vote) {
           printf("*** Found msg in queue - Inbac Id = %lu - %s\n",
               msg->inbacId, InbacData::toString(msg->owners, msg->vote));
           #endif
-          deliver1(msg->owners, msg->vote);
+          deliver1(msg->owners, msg->vote, msg->all);
           break;
         } default:
           break; // Should not happen
@@ -324,6 +326,8 @@ void InbacData::timeoutEvent0() {
 
     if (id < maxNbCrashed) {
 
+      bool all = (collection0->getNitems() == getNNodes());
+
       for (it = serverset->getFirst(); it != serverset->getLast();
            it = serverset->getNext(it)) {
         if (IPPortServerno::cmp(it->key, server) != 0) {
@@ -332,6 +336,7 @@ void InbacData::timeoutEvent0() {
           rpcdata->data = new InbacMessageRPCParm;
           rpcdata->data->type = 1;
           rpcdata->data->owners = collection0;
+          rpcdata->data->all = all;
           rpcdata->data->vote = and0;
           rpcdata->data->inbacId = inbacId;
           InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
@@ -343,7 +348,7 @@ void InbacData::timeoutEvent0() {
                           inbacmessagecallback, imcd);
 
         } else {
-          deliver1(collection0, and1);
+          deliver1(collection0, and1, all);
         }
       }
 
@@ -357,6 +362,7 @@ void InbacData::timeoutEvent0() {
           rpcdata->data = new InbacMessageRPCParm;
           rpcdata->data->type = 1;
           rpcdata->data->owners = collection0;
+          rpcdata->data->all = (collection0->getNitems() == maxNbCrashed) ? true : false;
           rpcdata->data->vote = and0;
           rpcdata->data->owner = server;
           rpcdata->data->inbacId = inbacId;
@@ -391,7 +397,7 @@ void InbacData::timeoutEvent1() {
     phase = 2;
     if (id < maxNbCrashed) {
 
-      if (checkBackupVotes1()) {
+      if (cnt == (maxNbCrashed + 1) && all1) {
         decision = and1;
         decide(decision);
       } else {
@@ -401,7 +407,7 @@ void InbacData::timeoutEvent1() {
     } else {
 
       addAllVotes1ToVotes0();
-      if (checkAllVotes1()) {
+      if (cnt == maxNbCrashed && all1) {
         decision = and1;
         decide(decision);
       } else if (cnt >= 1) {
@@ -449,7 +455,7 @@ void InbacData::timeoutEvent1() {
 void InbacData::timeoutEventHelp() {
   if ( (cnt + cntHelp >= getNNodes() - maxNbCrashed) && wait ) {
     wait = false;
-    if (checkAllVotes1()) {
+    if (cnt == maxNbCrashed && all1) {
       decision = and1;
       decide(decision);
     } else if (cnt >= 1) {
@@ -488,31 +494,6 @@ void InbacData::consensusRescue2() {
   printf("***Consensus2 propose %s\n", proposal ? "true" : "false");
   #endif
   consData->propose(proposal);
-}
-
-bool InbacData::checkAllVotes1() {
-  if (collection1->getNitems() != maxNbCrashed) { return false; }
-  SetNode<SetPair> *it;
-  for (it = collection1->getFirst(); it != collection1->getLast();
-        it = collection1->getNext(it)) {
-    int size = it->key.set.getNitems();
-    if (size != getNNodes()) { return false; }
-  }
-  return true;
-}
-
-bool InbacData::checkBackupVotes1() {
-  if (collection1->getNitems() != maxNbCrashed + 1) { return false; }
-  SetNode<SetPair> *it;
-  bool foundF = false;
-  for (it = collection1->getFirst(); it != collection1->getLast();
-        it = collection1->getNext(it)) {
-    int size = it->key.set.getNitems();
-    if (size == maxNbCrashed) {
-      if (foundF) { return false; } else { foundF = true; }
-    } else if (size != getNNodes()) { return false; }
-  }
-  return foundF;
 }
 
 bool InbacData::checkAllExistVotes1() {

@@ -89,6 +89,7 @@ private:
   bool and0;
   Set<SetPair> *collection1;
   bool and1;
+  bool all1;
   Set<IPPortServerno> *collectionHelp;
   bool andHelp;
   bool wait;
@@ -109,8 +110,6 @@ private:
   int addVote0(Set<IPPortServerno> *owners, bool vote);
   void addVote1(Set<IPPortServerno> *owners, bool vote);
 
-  bool checkAllVotes1();
-  bool checkBackupVotes1();
   bool checkAllExistVotes1();
   void addAllVotes1ToVotes0();
 
@@ -142,7 +141,7 @@ public:
   void timeoutEvent(int type);
   void timeoutEventHelp();
   void deliver0(IPPortServerno owner, bool vote);
-  void deliver1(Set<IPPortServerno> *owners, bool vote);
+  void deliver1(Set<IPPortServerno> *owners, bool vote, bool all);
 
   int getPhase() { return phase; }
   int getId() { return id; }

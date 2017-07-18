@@ -1552,7 +1552,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
             d->data->inbacId, InbacData::toString(d->data->owners, d->data->vote));
         #endif
         resp->data->type = 1;
-        inbacData->deliver1(d->data->owners, d->data->vote);
+        inbacData->deliver1(d->data->owners, d->data->vote, d->data->all);
         break;
 
       } case 2: {
