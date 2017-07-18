@@ -131,7 +131,11 @@ void ConsensusData::setTimeout() {
 }
 
 void ConsensusData::propose(bool v) {
+
+  #ifdef TX_DEBUG_2
   InbacData::nbTotalCons++;
+  #endif
+
   started = true;
   vote = v;
   setTimeout();

@@ -398,6 +398,8 @@ struct InbacRPCParm {
   u64 inbacId;
 
   Set<IPPortServerno> *serverset; // set of storage servers
+  int rank;
+  IPPortServerno owner;
   int nbServers;                  // number of storages servers
 
   // stuff for piggyback write optimization (if GAIA_WRITE_ON_PREPARE enabled)

@@ -41,16 +41,20 @@
 void inbacmessagecallback(char *data, int len, void *callbackdata) {
   InbacMessageCallbackData *pcd = (InbacMessageCallbackData*) callbackdata;
   InbacMessageRPCRespData rpcresp;
-  if (data){
+  if (data) {
     rpcresp.demarshall(data);
     pcd->data = *rpcresp.data;
+
     #ifdef TX_DEBUG
     printf("*** Callback Event - Inbac Id = %lu - %d\n", pcd->data.inbacId, pcd->data.type);
     #endif
+
     if (pcd->data.type == 0) {
+
       #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %lu - %s\n", pcd->data.inbacId, "Helped");
       #endif
+
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
       if (inbacData->getId() >= inbacData->getF()) {
         inbacData->addVoteHelp(pcd->data.owners, pcd->data.vote);
@@ -68,22 +72,26 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
 int inbacTimeoutHandler(void* arg) {
   InbacTimeoutData *timeoutData = (InbacTimeoutData*) arg;
   if (timeoutData->data) {
+
     #ifdef TX_DEBUG
     printf("Timeout Event - Inbac Id = %lu\n", data->GetKey());
     #endif
+
     timeoutData->data->timeoutEvent(timeoutData->type);
   }
-  // delete timeoutData;
   return 0;
 }
 
-HashTable<u64,InbacData>* InbacData::inbacDataObjects = new HashTable<u64,InbacData>(100);
+HashTable<u64,InbacData>* InbacData::inbacDataObjects = new HashTable<u64,InbacData>(10000);
 LinkList<InbacMessageRPCParm>* InbacData::msgQueue = new LinkList<InbacMessageRPCParm>(true);
+
+#ifdef TX_DEBUG_2
 int InbacData::nbTotalTx = 0;
 int InbacData::nbTotalCons = 0;
 int InbacData::nbTotalAbort = 0;
 int InbacData::nbSpeedUp0 = 0;
 int InbacData::nbSpeedUp1 = 0;
+#endif
 
 InbacData* InbacData::getInbacData(u64 key) {
   InbacData* data = inbacDataObjects->lookup(key);
@@ -101,14 +109,18 @@ void InbacData::removeInbacData(InbacData *data) {
 void InbacData::deliver0(IPPortServerno owner, bool vote) {
   if (phase == 0) {
     int k = addVote0(owner, vote);
-    int n = getNNodes();
-    if ( (id < maxNbCrashed && k == n) ||
+    if ( (id < maxNbCrashed && k == NNodes) ||
           (id == maxNbCrashed && k == maxNbCrashed) ) {
+
+      #ifdef TX_DEBUG_2
       InbacData::nbSpeedUp0++;
+      #endif
+
+      d0 = false;
       InbacTimeoutData *timeoutData = new InbacTimeoutData;
       timeoutData->data = this;
       timeoutData->type = 0;
-      TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, 0);
+      inbacTimeoutHandler((void*) timeoutData);
     }
   }
 }
@@ -118,11 +130,16 @@ void InbacData::deliver1(Set<IPPortServerno> *owners, bool vote, bool all) {
   cnt++;
   all1 = all1 && all;
   if (cnt == maxNbCrashed) {
+
+    #ifdef TX_DEBUG_2
     InbacData::nbSpeedUp1++;
+    #endif
+
+    d1 = false;
     InbacTimeoutData *timeoutData = new InbacTimeoutData;
     timeoutData->data = this;
     timeoutData->type = 1;
-    TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, 0);
+    inbacTimeoutHandler((void*) timeoutData);
   }
 }
 
@@ -166,22 +183,16 @@ InbacData::InbacData(InbacDataParm *parm) {
   Rpcc = parm->rpc;
   serverset = new Set<IPPortServerno>;
   *serverset = *(parm->parm->serverset);
-  SetNode<IPPortServerno> *it;
-  int i = 0;
-  for (it = serverset->getFirst(); it != serverset->getLast();
-       it = serverset->getNext(it), i++) {
-    if (IPPort::cmp(it->key.ipport, parm->ipport) == 0) {
-      id = i;
-      server = it->key;
-      break;
-    }
-  }
+  NNodes = serverset->getNitems();
+  maxNbCrashed = (MAX_NB_CRASHED < NNodes) ? MAX_NB_CRASHED : NNodes - 1;
 
-  int n = getNNodes();
-  maxNbCrashed = (MAX_NB_CRASHED < n) ? MAX_NB_CRASHED : n - 1;
+  server = parm->parm->owner;
+  id = parm->parm->rank;
 
   t0 = true;
   t1 = true;
+  d0 = true;
+  d1 = true;
 
   #ifdef TX_DEBUG
   printf("My INBAC id is %d (%u:%u)\n", id, server.ipport.ip, server.ipport.port);
@@ -207,7 +218,9 @@ InbacData::InbacData(InbacDataParm *parm) {
 
 void InbacData::propose(int vote) {
 
+  #ifdef TX_DEBUG_2
   InbacData::nbTotalTx++;
+  #endif
 
   #ifdef TX_DEBUG
   printf("*** Propose %s Event - Inbac ID = %lu\n",
@@ -269,14 +282,14 @@ void InbacData::propose(int vote) {
       msg = msgIt;
       switch (msg->type) {
         case 0: {
-          #ifdef TX_DEBUG_2
+          #ifdef TX_DEBUG
           printf("*** Found msg in queue - Inbac Id = %lu - %s\n",
               msg->inbacId, InbacData::toString(msg->owner, msg->vote));
           #endif
           deliver0(msg->owner, msg->vote);
           break;
         } case 1: {
-          #ifdef TX_DEBUG_2
+          #ifdef TX_DEBUG
           printf("*** Found msg in queue - Inbac Id = %lu - %s\n",
               msg->inbacId, InbacData::toString(msg->owners, msg->vote));
           #endif
@@ -297,24 +310,28 @@ void InbacData::propose(int vote) {
 }
 
 void InbacData::tryDelete() {
-  // removeInbacData(this);
-  // delete this;
+  if (d0 && d1 && decided) {
+    removeInbacData(this);
+    delete this;
+  }
 }
 
 void InbacData::timeoutEvent(int type) {
-  if (type == 0 && t0) {
-    timeoutEvent0();
-    t0 = false;
-  } else if (type == 1 && t1) {
-    timeoutEvent1();
-  } else {
-    if (decided) { tryDelete(); }
+  if (type == 0) {
+    if (t0) { timeoutEvent0();}
+    else { d0 = true; }
+
+  } else if (type == 1) {
+    if (t1) { timeoutEvent1();}
+    else { d1 = true; tryDelete(); }
   }
 }
 
 void InbacData::timeoutEvent0() {
 
   if (phase == 0) {
+
+    t0 = false;
 
     #ifdef TX_DEBUG
     printf("*** Timeout 0 Event - Inbac ID = %lu\n", inbacId);
@@ -326,7 +343,7 @@ void InbacData::timeoutEvent0() {
 
     if (id < maxNbCrashed) {
 
-      bool all = (collection0->getNitems() == getNNodes());
+      bool all = (collection0->getNitems() == NNodes);
 
       for (it = serverset->getFirst(); it != serverset->getLast();
            it = serverset->getNext(it)) {
@@ -394,6 +411,7 @@ void InbacData::timeoutEvent1() {
     printf("*** Timeout 1 Event - Inbac ID = %lu\n", inbacId);
     #endif
 
+    t1 = false;
     phase = 2;
     if (id < maxNbCrashed) {
 
@@ -453,7 +471,7 @@ void InbacData::timeoutEvent1() {
 }
 
 void InbacData::timeoutEventHelp() {
-  if ( (cnt + cntHelp >= getNNodes() - maxNbCrashed) && wait ) {
+  if ( (cnt + cntHelp >= NNodes - maxNbCrashed) && wait ) {
     wait = false;
     if (cnt == maxNbCrashed && all1) {
       decision = and1;
@@ -505,7 +523,7 @@ bool InbacData::checkAllExistVotes1() {
     for (it2 = it->key.set.getFirst(); it2 != it->key.set.getLast();
           it2 = it->key.set.getNext(it2)) {
       if (!owners->belongs(it2->key)) { owners->insert(it2->key); }
-      if (owners->getNitems() == getNNodes()) { return true; }
+      if (owners->getNitems() == NNodes) { return true; }
     }
   }
 
@@ -526,21 +544,26 @@ void InbacData::addAllVotes1ToVotes0() {
 }
 
 bool InbacData::checkHelpVotes() {
-  return (collectionHelp->getNitems() == getNNodes());
+  return (collectionHelp->getNitems() == NNodes);
 }
 
 void InbacData::decide(bool d) {
 
   if (!decided) {
+
+    #ifdef TX_DEBUG_2
     if (!d) { InbacData::nbTotalAbort++; }
-    if (InbacData::nbTotalTx % 300 == 0) {
+    if (InbacData::nbTotalTx % 1000 == 0) {
       printf("%d Consensus out of %d transactions, %d aborts, %d speed-up0, %d speed-up1\n",
         InbacData::nbTotalCons, InbacData::nbTotalTx, InbacData::nbTotalAbort, InbacData::nbSpeedUp0, InbacData::nbSpeedUp1);
     }
-    decided = true;
+    #endif
+
     #ifdef TX_DEBUG
     printf("*** Decide %s Event - Inbac ID = %lu\n", d ? "true" : "false", inbacId);
     #endif
+
+    decided = true;
     crpcdata->data->commit = d ? 0 : 1;
     CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
 
@@ -554,18 +577,17 @@ void InbacData::decide(bool d) {
     TaskScheduler *ts = tgetTaskScheduler();
     ts->endTask(rti);
 
-    // if (r2) { tryDelete(); }
+    tryDelete();
 
   }
 
 }
 
-void* startInbac(void *arg_) {
+void startInbac(void *arg) {
 
-  InbacDataParm *parm = (InbacDataParm*) arg_;
+  InbacDataParm *parm = (InbacDataParm*) arg;
   InbacData *inbacData = new InbacData(parm);
 
   inbacData->propose(parm->vote);
 
-  return NULL;
 }

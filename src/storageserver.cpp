@@ -1526,7 +1526,6 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
   resp->data = new InbacMessageRPCResp;
   resp->data->inbacId = d->data->inbacId;
 
-
   InbacData *inbacData = InbacData::getInbacData(d->data->inbacId);
 
   #ifdef TX_DEBUG
@@ -1578,7 +1577,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
       case 0:
       case 1: {
         resp->data->type = 1;
-        #ifdef TX_DEBUG_2
+        #ifdef TX_DEBUG
         printf("*** Msg stored in queue - Inbac Id = %lu - Type %d\n", d->data->inbacId, d->data->type);
         #endif
         InbacMessageRPCParm *msg = new InbacMessageRPCParm;
@@ -1592,7 +1591,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
       } case 2: {
         resp->data->type = 0;
         resp->data->owners = new Set<IPPortServerno>;
-        resp->data->vote = false;
+        resp->data->vote = true;
         break;
       } default: {
         resp->data->type = -1; // Should not happen

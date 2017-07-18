@@ -77,10 +77,13 @@ private:
   IPPortServerno server;
   CommitRPCData *crpcdata;
   int maxNbCrashed;
+  int NNodes;
   RPCTaskInfo *rti;
 
   bool t0;
   bool t1;
+  bool d0;
+  bool d1;
 
   int phase;
   bool proposed;
@@ -122,11 +125,13 @@ private:
 
 public:
 
+  #ifdef TX_DEBUG_2
   static int nbTotalTx;
   static int nbTotalCons;
   static int nbTotalAbort;
   static int nbSpeedUp0;
   static int nbSpeedUp1;
+  #endif
 
   InbacData *prev, *next, *sprev, *snext;
 
@@ -143,13 +148,9 @@ public:
   void deliver0(IPPortServerno owner, bool vote);
   void deliver1(Set<IPPortServerno> *owners, bool vote, bool all);
 
-  int getPhase() { return phase; }
   int getId() { return id; }
-  bool getDecision() { return decision; }
-  int getNNodes() { return serverset->getNitems(); }
   void incrCntHelp() { cntHelp++;  }
   int getF() { return maxNbCrashed; }
-  bool waiting() { return wait; }
 
   Set<IPPortServerno>* getVote0() { return collection0; }
   bool getAnd0() { return and0; }
@@ -193,6 +194,6 @@ struct InbacTimeoutData {
   int type;
 };
 
-void* startInbac(void *arg_);
+void startInbac(void *arg);
 
 #endif

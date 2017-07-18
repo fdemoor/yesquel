@@ -844,7 +844,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
   clock_gettime(CLOCK_MONOTONIC_RAW, &end);
   uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
   Transaction::stat->add(Servers.getNitems(), (double) delta_us);
-  Transaction::stat->print(300);
+  Transaction::stat->print(1000);
   // printf("Commit protocol took %lu µs\n", delta_us);
   // fflush(stdout);
 
@@ -911,8 +911,10 @@ int Transaction::auxinbac(Timestamp committs) {
   icd = new InbacCallbackData;
   icd->toSignal = true;
 
+  int rank = 0;
+
   for (it = serverset->getFirst(); it != serverset->getLast();
-       it = serverset->getNext(it)) {
+       it = serverset->getNext(it), rank++) {
     server = it->key;
 
     rpcdata = new InbacRPCData;
@@ -924,6 +926,8 @@ int Transaction::auxinbac(Timestamp committs) {
     rpcdata->data->committs = committs;
     rpcdata->data->onephasecommit = hascommitted;
     rpcdata->data->inbacId = key;
+    rpcdata->data->owner = server;
+    rpcdata->data->rank = rank;
 
     rpcdata->data->piggy_cid = 0;
     rpcdata->data->piggy_oid = 0;
@@ -942,9 +946,9 @@ int Transaction::auxinbac(Timestamp committs) {
 
   }
 
-  #ifdef TX_DEBUG_2
-  // printf("Transaction involves %d server(s)\n", serverset->getNitems());
-  // printf("Wait on semaphore %p\n", &(icd->sem)); fflush(stdout);
+  #ifdef TX_DEBUG
+  printf("Transaction involves %d server(s)\n", serverset->getNitems());
+  printf("Wait on semaphore %p\n", &(icd->sem)); fflush(stdout);
   #endif
 
   icd->sem.wait(INFINITE);
