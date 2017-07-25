@@ -242,16 +242,12 @@ int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
   nbBuf++;
 
   if (data->type == 1) {
-    data->nbVotes = data->owners->getNitems();
-    char* raw = (char*) malloc(data->nbVotes * sizeof(IPPortServerno));
-    SetNode<IPPortServerno> *it;
-    int n = 0;
-    for (it = data->owners->getFirst(); it != data->owners->getLast();
-         it = data->owners->getNext(it), n++) {
-      memcpy(raw + n * sizeof(IPPortServerno), &(it->key), sizeof(IPPortServerno));
+    char* raw = (char*) malloc(data->size * sizeof(bool));
+    for (int n = 0; n < data->size; n++) {
+      memcpy(raw + n * sizeof(bool), &(data->owners[n]), sizeof(bool));
     }
     bufs[nbBuf].iov_base = raw;
-    bufs[nbBuf].iov_len = data->nbVotes * sizeof(IPPortServerno);
+    bufs[nbBuf].iov_len = data->size * sizeof(bool);
     nbBuf++;
   }
 
@@ -261,12 +257,11 @@ int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
 void InbacMessageRPCData::demarshall(char *buf) {
   data = (InbacMessageRPCParm*) buf;
   if (data->type == 1) {
-    char* raw = buf + sizeof(InbacMessageRPCParm);
-    Set<IPPortServerno> *owners = new Set<IPPortServerno>;
-    int n;
-    for (n = 0; n < data->nbVotes; n++) {
-      IPPortServerno *server = (IPPortServerno*) (raw + n * sizeof(IPPortServerno));
-      owners->insert(*server);
+    char* raw = buf + sizeof(bool);
+    bool *owners = new bool[data->size];
+    for (int n = 0; n < data->size; n++) {
+      bool *server = (bool*) (raw + n * sizeof(bool));
+      owners[n] = *server;
     }
     data->owners = owners;
   }
@@ -281,16 +276,12 @@ int InbacMessageRPCRespData::marshall(iovec *bufs, int maxbufs) {
   nbBuf++;
 
   if (data->type == 0) {
-    data->nbVotes = data->owners->getNitems();
-    char* raw = (char*) malloc(data->nbVotes * sizeof(IPPortServerno));
-    SetNode<IPPortServerno> *it;
-    int n = 0;
-    for (it = data->owners->getFirst(); it != data->owners->getLast();
-         it = data->owners->getNext(it), n++) {
-      memcpy(raw + n * sizeof(IPPortServerno), &(it->key), sizeof(IPPortServerno));
+    char* raw = (char*) malloc(data->size * sizeof(bool));
+    for (int n = 0; n < data->size; n++) {
+      memcpy(raw + n * sizeof(bool), &(data->owners[n]), sizeof(bool));
     }
     bufs[nbBuf].iov_base = raw;
-    bufs[nbBuf].iov_len = data->nbVotes * sizeof(IPPortServerno);
+    bufs[nbBuf].iov_len = data->size * sizeof(bool);
     nbBuf++;
   }
 
@@ -300,21 +291,14 @@ int InbacMessageRPCRespData::marshall(iovec *bufs, int maxbufs) {
 void InbacMessageRPCRespData::demarshall(char *buf) {
   data = (InbacMessageRPCResp*) buf;
   if (data->type == 0) {
-    char* raw = buf + sizeof(InbacMessageRPCResp);
-    Set<IPPortServerno> *owners = new Set<IPPortServerno>;
-    int n;
-    for (n = 0; n < data->nbVotes; n++) {
-      IPPortServerno *server = (IPPortServerno*) (raw + n * sizeof(IPPortServerno));
-      owners->insert(*server);
+    char* raw = buf + sizeof(bool);
+    bool *owners = new bool[data->size];;
+    for (int n = 0; n < data->size; n++) {
+      bool *server = (bool*) (raw + n * sizeof(bool));
+      owners[n] = *server;
     }
     data->owners = owners;
   }
-}
-
-
-int SetPair::cmp(const SetPair &left, const SetPair &right) {
-  // Should not be a problem
-  return -1;
 }
 
 

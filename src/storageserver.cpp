@@ -1548,10 +1548,10 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
       } case 1: {
         #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %lu - %s\n",
-            d->data->inbacId, InbacData::toString(d->data->owners, d->data->vote));
+            d->data->inbacId, InbacData::toString(d->data->owners, d->data->size, d->data->vote));
         #endif
         resp->data->type = 1;
-        inbacData->deliver1(d->data->owners, d->data->vote, d->data->all);
+        inbacData->deliver1(d->data->owners, d->data->vote, d->data->owner, d->data->all);
         break;
 
       } case 2: {
@@ -1561,6 +1561,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
           #endif
           resp->data->type = 0;
           resp->data->owners = inbacData->getVote0();
+          resp->data->size = inbacData->getNNodes();
           resp->data->vote = inbacData->getAnd0();
         } else { resp->data->type = -1; }
         break;
@@ -1586,11 +1587,13 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         msg->owner = d->data->owner;
         msg->type = d->data->type;
         msg->inbacId = d->data->inbacId;
+        msg->size = d->data->size;
         InbacData::addMsgQueue(msg);
         break;
       } case 2: {
         resp->data->type = 0;
-        resp->data->owners = new Set<IPPortServerno>;
+        resp->data->owners = new bool[d->data->size];
+        for (int i = 0; i < d->data->size; i++) { resp->data->owners[i] = false; }
         resp->data->vote = true;
         break;
       } default: {

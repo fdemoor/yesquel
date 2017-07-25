@@ -88,13 +88,20 @@ private:
   int phase;
   bool proposed;
   bool decided;
-  Set<IPPortServerno> *collection0;
+
+  bool *collection0;
+  int size0;
   bool and0;
-  Set<SetPair> *collection1;
+
+  bool *collection1;
+  int size1;
   bool and1;
   bool all1;
-  Set<IPPortServerno> *collectionHelp;
+
+  bool *collectionHelp;
+  int sizeHelp;
   bool andHelp;
+
   bool wait;
   bool val;
   bool decision;
@@ -109,9 +116,9 @@ private:
   void timeoutEvent0();
   void timeoutEvent1();
 
-  int addVote0(IPPortServerno owner, bool vote);
-  int addVote0(Set<IPPortServerno> *owners, bool vote);
-  void addVote1(Set<IPPortServerno> *owners, bool vote);
+  int addVote0(int owner, bool vote);
+  int addVote0(bool *owners, bool vote);
+  void addVote1(bool *owners, bool vote, int owner);
 
   bool checkAllExistVotes1();
   void addAllVotes1ToVotes0();
@@ -137,25 +144,27 @@ public:
 
   u64 inbacId;
   u64 GetKey() { return inbacId; }
+  int getNNodes() { return NNodes; }
 
   InbacData() {}
   InbacData(InbacDataParm *parm);
+  ~InbacData();
 
   void propose(int vote);
   void decide(bool d);
   void timeoutEvent(int type);
   void timeoutEventHelp();
-  void deliver0(IPPortServerno owner, bool vote);
-  void deliver1(Set<IPPortServerno> *owners, bool vote, bool all);
+  void deliver0(int owner, bool vote);
+  void deliver1(bool *owners, bool vote, int owner, bool all);
 
   int getId() { return id; }
   void incrCntHelp() { cntHelp++;  }
   int getF() { return maxNbCrashed; }
 
-  Set<IPPortServerno>* getVote0() { return collection0; }
+  bool* getVote0() { return collection0; }
   bool getAnd0() { return and0; }
 
-  int addVoteHelp(Set<IPPortServerno> *owners, bool vote);
+  int addVoteHelp(bool *owners, bool vote);
 
   static InbacData* getInbacData(u64 key);
   static void insertInbacData(InbacData *data);
@@ -167,19 +176,20 @@ public:
       else { return +1; }
   }
 
-  static const char* toString(IPPortServerno &p, bool b) {
+  static const char* toString(int p, bool b) {
     std::stringstream ss;
-    ss << "<" << p.ipport.ip << ":" << p.ipport.port;
+    ss << "<" << p;
     ss << "," << (b ? "true" : "false") << ">";
     return ss.str().c_str();
   }
 
-  static const char* toString(Set<IPPortServerno> *set, bool b) {
+  static const char* toString(bool *set, int size, bool b) {
     std::stringstream ss;
     ss << "<[";
-    SetNode<IPPortServerno> *it;
-    for (it = set->getFirst(); it != set->getLast(); it = set->getNext(it)) {
-      ss << it->key.ipport.ip << ":" << it->key.ipport.port << ", ";
+    for (int i = 0; i < size; i++) {
+      if (set[i]) {
+        ss << i << ", ";
+      }
     }
     ss << "]," << (b ? "true" : "false") << ">";
     return ss.str().c_str();

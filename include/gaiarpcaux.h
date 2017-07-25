@@ -442,17 +442,12 @@ public:
   void demarshall(char *buf);
 };
 
-struct SetPair {
-  Set<IPPortServerno> set;
-  static int cmp(const SetPair &left, const SetPair &right);
-};
-
 struct InbacMessageRPCParm {
   bool vote;
   bool all;
-  Set<IPPortServerno> *owners;
-  IPPortServerno owner;
-  int nbVotes;
+  bool *owners;
+  int size;
+  int owner;
   int type;     // 0: vote, 1: set of votes, 2: help
   u64 inbacId;
   InbacMessageRPCParm *prev, *next;
@@ -471,8 +466,8 @@ public:
 struct InbacMessageRPCResp {
   int type;           // 0: helped, -1:error, else: no callback needed
   bool vote;
-  Set<IPPortServerno> *owners;
-  int nbVotes;
+  bool *owners;
+  int size;
   u64 inbacId;
 };
 
