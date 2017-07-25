@@ -168,9 +168,7 @@ int InbacData::addVote0(bool *owners, bool vote) {
 void InbacData::addVote1(bool *owners, bool vote, int owner) {
   for (int i = 0; i < NNodes; i++) {
     if (owners[i]) {
-      if (!collection1[i + NNodes * owner]) {
-        collection1[i + NNodes * owner] = true;
-      }
+      collection1[i + NNodes * owner] = true;
     }
   }
   size1++;
