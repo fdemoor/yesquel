@@ -185,7 +185,6 @@ InbacData::InbacData(InbacDataParm *parm) {
   *serverset = *(parm->parm->serverset);
   NNodes = serverset->getNitems();
   maxNbCrashed = (MAX_NB_CRASHED < NNodes) ? MAX_NB_CRASHED : NNodes - 1;
-
   server = parm->parm->owner;
   id = parm->parm->rank;
 
@@ -245,12 +244,12 @@ void InbacData::propose(int vote) {
       rpcdata->data->owner = server;
       rpcdata->data->type = 0;
       rpcdata->data->inbacId = inbacId;
-
       InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
 
       #ifdef TX_DEBUG
       printf("Sending vote to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
       #endif
+
       Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
                       inbacmessagecallback, imcd);
 
@@ -361,6 +360,7 @@ void InbacData::timeoutEvent0() {
           #ifdef TX_DEBUG
           printf("Sending backup votes to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
           #endif
+
           Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
                           inbacmessagecallback, imcd);
 
@@ -388,6 +388,7 @@ void InbacData::timeoutEvent0() {
           #ifdef TX_DEBUG
           printf("Sending backup votes to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
           #endif
+
           Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
                           inbacmessagecallback, imcd);
           i++;

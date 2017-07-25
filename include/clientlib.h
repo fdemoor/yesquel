@@ -91,8 +91,10 @@ private:
   int* headcounts;
   double* durations;
   int size;
+  int total;
 public:
   TransactionStat(int n) {
+    total = 0;
     size = n;
     headcounts = new int[size];
     durations = new double[size];
@@ -106,15 +108,20 @@ public:
     delete[] durations;
   }
   void add(int n, double t) {
+    total++;
     headcounts[n-1]++;
     durations[n-1] += t;
   }
   void print(int k) {
-    printf("Transactions: ");
-    for (int i = 0; i < size; i++) {
-      printf("%d (%d, %g, %g) ", i+1, headcounts[i], durations[i], durations[i] / headcounts[i]);
+    if ((total % k) == 0) {
+      FILE *fp =  fopen("transanctionStat.log", "w");
+      fprintf(fp, "Transactions: ");
+      for (int i = 0; i < size; i++) {
+        fprintf(fp, "%d (%d, %g, %g) ", i+1, headcounts[i], durations[i], durations[i] / headcounts[i]);
+      }
+      fprintf(fp, "\n");
+      fclose(fp);
     }
-    printf("\n"); fflush(stdout);
   }
 };
 
