@@ -242,12 +242,10 @@ int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
   nbBuf++;
 
   if (data->type == 1) {
-    char* raw = (char*) malloc(data->size * sizeof(bool));
-    for (int n = 0; n < data->size; n++) {
-      memcpy(raw + n * sizeof(bool), &(data->owners[n]), sizeof(bool));
-    }
+    char* raw = (char*) malloc(data->size * sizeof(int));
+    memcpy(raw, data->owners, data->size * sizeof(int));
     bufs[nbBuf].iov_base = raw;
-    bufs[nbBuf].iov_len = data->size * sizeof(bool);
+    bufs[nbBuf].iov_len = data->size * sizeof(int);
     nbBuf++;
   }
 
@@ -257,12 +255,9 @@ int InbacMessageRPCData::marshall(iovec *bufs, int maxbufs) {
 void InbacMessageRPCData::demarshall(char *buf) {
   data = (InbacMessageRPCParm*) buf;
   if (data->type == 1) {
-    char* raw = buf + sizeof(bool);
-    bool *owners = new bool[data->size];
-    for (int n = 0; n < data->size; n++) {
-      bool *server = (bool*) (raw + n * sizeof(bool));
-      owners[n] = *server;
-    }
+    char* raw = buf + sizeof(InbacMessageRPCParm);
+    int *owners = new int[data->size];
+    memcpy(owners, raw, data->size * sizeof(int));
     data->owners = owners;
   }
 }
@@ -276,12 +271,10 @@ int InbacMessageRPCRespData::marshall(iovec *bufs, int maxbufs) {
   nbBuf++;
 
   if (data->type == 0) {
-    char* raw = (char*) malloc(data->size * sizeof(bool));
-    for (int n = 0; n < data->size; n++) {
-      memcpy(raw + n * sizeof(bool), &(data->owners[n]), sizeof(bool));
-    }
+    char* raw = (char*) malloc(data->size * sizeof(int));
+    memcpy(raw, data->owners, data->size * sizeof(int));
     bufs[nbBuf].iov_base = raw;
-    bufs[nbBuf].iov_len = data->size * sizeof(bool);
+    bufs[nbBuf].iov_len = data->size * sizeof(int);
     nbBuf++;
   }
 
@@ -291,12 +284,9 @@ int InbacMessageRPCRespData::marshall(iovec *bufs, int maxbufs) {
 void InbacMessageRPCRespData::demarshall(char *buf) {
   data = (InbacMessageRPCResp*) buf;
   if (data->type == 0) {
-    char* raw = buf + sizeof(bool);
-    bool *owners = new bool[data->size];;
-    for (int n = 0; n < data->size; n++) {
-      bool *server = (bool*) (raw + n * sizeof(bool));
-      owners[n] = *server;
-    }
+    char* raw = buf + sizeof(InbacMessageRPCResp);
+    int *owners = new int[data->size];;
+    memcpy(owners, raw, data->size * sizeof(int));
     data->owners = owners;
   }
 }

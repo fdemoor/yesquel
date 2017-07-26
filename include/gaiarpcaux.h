@@ -445,7 +445,7 @@ public:
 struct InbacMessageRPCParm {
   bool vote;
   bool all;
-  bool *owners;
+  int *owners;
   int size;
   int owner;
   int type;     // 0: vote, 1: set of votes, 2: help
@@ -466,7 +466,7 @@ public:
 struct InbacMessageRPCResp {
   int type;           // 0: helped, -1:error, else: no callback needed
   bool vote;
-  bool *owners;
+  int *owners;
   int size;
   u64 inbacId;
 };

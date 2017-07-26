@@ -48,7 +48,12 @@
 #include <chrono>
 #include <thread>
 
+#include <boost/dynamic_bitset.hpp>
+
+class InbacData;
+
 int inbacTimeoutHandler(void* arg);
+int inbacTimeoutHandler(InbacData* data, int type);
 
 struct InbacMessageCallbackData {
   Semaphore sem; // to wait for response
@@ -89,16 +94,16 @@ private:
   bool proposed;
   bool decided;
 
-  bool *collection0;
+  boost::dynamic_bitset<> collection0;
   int size0;
   bool and0;
+  int *votes0;
 
-  bool *collection1;
-  int size1;
+  boost::dynamic_bitset<> collection1;
   bool and1;
   bool all1;
 
-  bool *collectionHelp;
+  boost::dynamic_bitset<> collectionHelp;
   int sizeHelp;
   bool andHelp;
 
@@ -117,8 +122,7 @@ private:
   void timeoutEvent1();
 
   int addVote0(int owner, bool vote);
-  int addVote0(bool *owners, bool vote);
-  void addVote1(bool *owners, bool vote, int owner);
+  void addVote1(int *owners, int size, bool vote, int owner);
 
   bool checkAllExistVotes1();
   void addAllVotes1ToVotes0();
@@ -144,27 +148,26 @@ public:
 
   u64 inbacId;
   u64 GetKey() { return inbacId; }
-  int getNNodes() { return NNodes; }
 
   InbacData() {}
   InbacData(InbacDataParm *parm);
-  ~InbacData();
 
   void propose(int vote);
   void decide(bool d);
   void timeoutEvent(int type);
   void timeoutEventHelp();
   void deliver0(int owner, bool vote);
-  void deliver1(bool *owners, bool vote, int owner, bool all);
+  void deliver1(int *owners, int size, bool vote, int owner, bool all);
 
   int getId() { return id; }
   void incrCntHelp() { cntHelp++;  }
   int getF() { return maxNbCrashed; }
 
-  bool* getVote0() { return collection0; }
+  int* getVote0() { return votes0; }
+  int getSize0() { return size0; }
   bool getAnd0() { return and0; }
 
-  int addVoteHelp(bool *owners, bool vote);
+  int addVoteHelp(int *owners, int size, bool vote);
 
   static InbacData* getInbacData(u64 key);
   static void insertInbacData(InbacData *data);
@@ -183,13 +186,11 @@ public:
     return ss.str().c_str();
   }
 
-  static const char* toString(bool *set, int size, bool b) {
+  static const char* toString(int *set, int size, bool b) {
     std::stringstream ss;
     ss << "<[";
     for (int i = 0; i < size; i++) {
-      if (set[i]) {
-        ss << i << ", ";
-      }
+      ss << set[i] << ", ";
     }
     ss << "]," << (b ? "true" : "false") << ">";
     return ss.str().c_str();

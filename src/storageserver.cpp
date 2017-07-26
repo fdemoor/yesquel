@@ -1551,7 +1551,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
             d->data->inbacId, InbacData::toString(d->data->owners, d->data->size, d->data->vote));
         #endif
         resp->data->type = 1;
-        inbacData->deliver1(d->data->owners, d->data->vote, d->data->owner, d->data->all);
+        inbacData->deliver1(d->data->owners, d->data->size, d->data->vote, d->data->owner, d->data->all);
         break;
 
       } case 2: {
@@ -1561,7 +1561,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
           #endif
           resp->data->type = 0;
           resp->data->owners = inbacData->getVote0();
-          resp->data->size = inbacData->getNNodes();
+          resp->data->size = inbacData->getSize0();
           resp->data->vote = inbacData->getAnd0();
         } else { resp->data->type = -1; }
         break;
@@ -1592,8 +1592,8 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         break;
       } case 2: {
         resp->data->type = 0;
-        resp->data->owners = new bool[d->data->size];
-        for (int i = 0; i < d->data->size; i++) { resp->data->owners[i] = false; }
+        resp->data->owners = new int[0];
+        resp->data->size = 0;
         resp->data->vote = true;
         break;
       } default: {

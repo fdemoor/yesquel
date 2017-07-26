@@ -57,7 +57,7 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
 
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
       if (inbacData->getId() >= inbacData->getF()) {
-        inbacData->addVoteHelp(pcd->data.owners, pcd->data.vote);
+        inbacData->addVoteHelp(pcd->data.owners, pcd->data.size, pcd->data.vote);
         inbacData->incrCntHelp();
         inbacData->timeoutEventHelp();
       }
@@ -78,6 +78,18 @@ int inbacTimeoutHandler(void* arg) {
     #endif
 
     timeoutData->data->timeoutEvent(timeoutData->type);
+  }
+  return 0;
+}
+
+int inbacTimeoutHandler(InbacData* data, int type) {
+  if (data) {
+
+    #ifdef TX_DEBUG
+    printf("Timeout Event - Inbac Id = %lu\n", timeoutData->data->GetKey());
+    #endif
+
+    data->timeoutEvent(type);
   }
   return 0;
 }
@@ -117,16 +129,13 @@ void InbacData::deliver0(int owner, bool vote) {
       #endif
 
       d0 = false;
-      InbacTimeoutData *timeoutData = new InbacTimeoutData;
-      timeoutData->data = this;
-      timeoutData->type = 0;
-      inbacTimeoutHandler((void*) timeoutData);
+      inbacTimeoutHandler(this, 0);
     }
   }
 }
 
-void InbacData::deliver1(bool *owners, bool vote, int owner, bool all) {
-  addVote1(owners, vote, owner);
+void InbacData::deliver1(int *owners, int size, bool vote, int owner, bool all) {
+  addVote1(owners, size, vote, owner);
   cnt++;
   all1 = all1 && all;
   if (cnt == maxNbCrashed) {
@@ -136,58 +145,37 @@ void InbacData::deliver1(bool *owners, bool vote, int owner, bool all) {
     #endif
 
     d1 = false;
-    InbacTimeoutData *timeoutData = new InbacTimeoutData;
-    timeoutData->data = this;
-    timeoutData->type = 1;
-    inbacTimeoutHandler((void*) timeoutData);
+    inbacTimeoutHandler(this, 1);
   }
 }
 
 int InbacData::addVote0(int owner, bool vote) {
-  if (!collection0[owner]) {
-    collection0[owner] = true;
+  if (!collection0.test(owner)) {
+    collection0.set(owner, true);
+    votes0[size0] = owner;
     size0++;
   }
   and0 = and0 && vote;
   return size0;
 }
 
-int InbacData::addVote0(bool *owners, bool vote) {
-  for (int i = 0; i < NNodes; i++) {
-    if (owners[i]) {
-      if (!collection0[i]) {
-        collection0[i] = true;
-        size0++;
-      }
-    }
+void InbacData::addVote1(int *owners, int size, bool vote, int owner) {
+  for (int i = 0; i < size; i++) {
+    collection1.set(owners[i] + NNodes * owner, true);
   }
-  and0 = and0 && vote;
-  return size0;
-}
-
-void InbacData::addVote1(bool *owners, bool vote, int owner) {
-  for (int i = 0; i < NNodes; i++) {
-    if (owners[i]) {
-      collection1[i + NNodes * owner] = true;
-    }
-  }
-  size1++;
   and1 = and1 && vote;
 }
 
-int InbacData::addVoteHelp(bool *owners, bool vote) {
-  for (int i = 0; i < NNodes; i++) {
-    if (owners[i]) {
-      if (!collectionHelp[i]) {
-        collectionHelp[i] = true;
-        sizeHelp++;
-      }
+int InbacData::addVoteHelp(int *owners, int size, bool vote) {
+  for (int i = 0; i < size; i++) {
+    if (!collectionHelp.test(owners[i])) {
+      collectionHelp.set(owners[i], true);
+      sizeHelp++;
     }
   }
   andHelp = andHelp && vote;
   return sizeHelp;
 }
-
 
 InbacData::InbacData(InbacDataParm *parm) {
 
@@ -214,17 +202,14 @@ InbacData::InbacData(InbacDataParm *parm) {
   phase = 0;
   proposed = false;
   decided = false;
-  collection0 = new bool[NNodes];
-  for (int i = 0; i < NNodes; i++) { collection0[i] = false; }
+  collection0 = boost::dynamic_bitset<>(NNodes);
   size0 = 0;
+  votes0 = new int[NNodes];
   and0 = true;
-  collection1 = new bool[NNodes * NNodes];
-  for (int i = 0; i < NNodes * NNodes; i++) { collection1[i] = false; }
-  size1 = 0;
+  collection1 = boost::dynamic_bitset<>(NNodes * NNodes);
   and1 = true;
   all1 = true;
-  collectionHelp = new bool[NNodes];
-  for (int i = 0; i < NNodes; i++) { collectionHelp[i] = false; }
+  collectionHelp = boost::dynamic_bitset<>(NNodes);
   sizeHelp = 0;
   andHelp = true;
   wait = false;
@@ -233,13 +218,6 @@ InbacData::InbacData(InbacDataParm *parm) {
 
   insertInbacData(this);
 
-}
-
-InbacData::~InbacData() {
-  delete serverset;
-  delete[] collection0;
-  delete[] collection1;
-  delete[] collectionHelp;
 }
 
 void InbacData::propose(int vote) {
@@ -319,7 +297,7 @@ void InbacData::propose(int vote) {
           printf("*** Found msg in queue - Inbac Id = %lu - %s\n",
               msg->inbacId, InbacData::toString(msg->owners, msg->size, msg->vote));
           #endif
-          deliver1(msg->owners, msg->vote, msg->owner, msg->all);
+          deliver1(msg->owners, msg->size, msg->vote, msg->owner, msg->all);
           break;
         } default:
           break; // Should not happen
@@ -365,7 +343,6 @@ void InbacData::timeoutEvent0() {
     #endif
 
     SetNode<IPPortServerno> *it;
-    int i = 0;
 
     if (id < maxNbCrashed) {
 
@@ -378,8 +355,8 @@ void InbacData::timeoutEvent0() {
           InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
           rpcdata->data = new InbacMessageRPCParm;
           rpcdata->data->type = 1;
-          rpcdata->data->owners = collection0;
-          rpcdata->data->size = NNodes;
+          rpcdata->data->owners = votes0;
+          rpcdata->data->size = size0;
           rpcdata->data->owner = id;
           rpcdata->data->all = all;
           rpcdata->data->vote = and0;
@@ -388,17 +365,22 @@ void InbacData::timeoutEvent0() {
 
           #ifdef TX_DEBUG
           printf("Sending backup votes to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
+          printf("*** Send Event - Inbac Id = %lu - %s\n",
+              inbacId, InbacData::toString(rpcdata->data->owners, rpcdata->data->size, rpcdata->data->vote));
           #endif
 
           Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
                           inbacmessagecallback, imcd);
 
         } else {
-          deliver1(collection0, and1, id, all);
+          deliver1(getVote0(), size0, and1, id, all);
         }
       }
 
     } else if (id == maxNbCrashed) {
+
+      int i = 0;
+      bool all = (size0 == maxNbCrashed) ? true : false;
 
       for (it = serverset->getFirst(); i < maxNbCrashed && it != serverset->getLast();
            it = serverset->getNext(it)) {
@@ -407,9 +389,9 @@ void InbacData::timeoutEvent0() {
           InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
           rpcdata->data = new InbacMessageRPCParm;
           rpcdata->data->type = 1;
-          rpcdata->data->owners = collection0;
-          rpcdata->data->size = NNodes;
-          rpcdata->data->all = (size0 == maxNbCrashed) ? true : false;
+          rpcdata->data->owners = votes0;
+          rpcdata->data->size = size0;
+          rpcdata->data->all = all;
           rpcdata->data->vote = and0;
           rpcdata->data->owner = id;
           rpcdata->data->inbacId = inbacId;
@@ -417,6 +399,8 @@ void InbacData::timeoutEvent0() {
 
           #ifdef TX_DEBUG
           printf("Sending backup votes to %u:%u\n", it->key.ipport.ip, it->key.ipport.port);
+          printf("*** Send Event - Inbac Id = %lu - %s\n",
+              inbacId, InbacData::toString(rpcdata->data->owners, rpcdata->data->size, rpcdata->data->vote));
           #endif
 
           Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
@@ -553,7 +537,7 @@ bool InbacData::checkAllExistVotes1() {
 void InbacData::addAllVotes1ToVotes0() {
   for (int i = 0; i < NNodes; i++) {
     for (int j = 0; j < NNodes; j++) {
-      if (collection1[j + i * NNodes]) {
+      if (collection1.test(j + i * NNodes)) {
         addVote0(j, and1);
       }
     }
