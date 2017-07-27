@@ -53,10 +53,9 @@
 class InbacData;
 
 int inbacTimeoutHandler(void* arg);
-int inbacTimeoutHandler(InbacData* data, int type);
+int inbacTimeoutHandler(InbacData* data, bool type);
 
 struct InbacMessageCallbackData {
-  Semaphore sem; // to wait for response
   InbacMessageRPCResp data;
   InbacMessageCallbackData *prev, *next; // linklist stuff
 };
@@ -81,9 +80,10 @@ private:
   int id;
   IPPortServerno server;
   CommitRPCData *crpcdata;
+  RPCTaskInfo *rti;
+
   int maxNbCrashed;
   int NNodes;
-  RPCTaskInfo *rti;
 
   bool t0;
   bool t1;
@@ -99,7 +99,6 @@ private:
   bool and0;
   int *votes0;
 
-  boost::dynamic_bitset<> collection1;
   bool and1;
   bool all1;
 
@@ -122,10 +121,9 @@ private:
   void timeoutEvent1();
 
   int addVote0(int owner, bool vote);
-  void addVote1(int *owners, int size, bool vote, int owner);
+  void addVote1(int *owners, int size, bool vote);
 
   bool checkAllExistVotes1();
-  void addAllVotes1ToVotes0();
 
   void consensusRescue1();
   void consensusRescue2();
@@ -154,20 +152,18 @@ public:
 
   void propose(int vote);
   void decide(bool d);
-  void timeoutEvent(int type);
+  void timeoutEvent(bool type);
   void timeoutEventHelp();
   void deliver0(int owner, bool vote);
-  void deliver1(int *owners, int size, bool vote, int owner, bool all);
+  void deliver1(int *owners, int size, bool vote, bool all);
+  void deliverHelp(int *owners, int size, bool vote);
 
   int getId() { return id; }
-  void incrCntHelp() { cntHelp++;  }
   int getF() { return maxNbCrashed; }
 
   int* getVote0() { return votes0; }
   int getSize0() { return size0; }
   bool getAnd0() { return and0; }
-
-  int addVoteHelp(int *owners, int size, bool vote);
 
   static InbacData* getInbacData(u64 key);
   static void insertInbacData(InbacData *data);
@@ -202,7 +198,7 @@ public:
 
 struct InbacTimeoutData {
   InbacData *data;
-  int type;
+  bool type; // False: type 0, true: type 1
 };
 
 void startInbac(void *arg);

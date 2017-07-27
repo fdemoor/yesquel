@@ -1449,7 +1449,6 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   RPCTaskInfo *rti = (RPCTaskInfo*) rpctasknotify;
 
-  int vote;
   InbacRPCRespData *resp = new InbacRPCRespData;
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('i');
@@ -1474,8 +1473,6 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
 
-  vote = respPrep->data->vote;
-
   if (!rpcdata->data->onephasecommit) {
 
     InbacDataParm *parm = new InbacDataParm;
@@ -1499,13 +1496,14 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
     startInbac((void*) parm);
 
-    resp = NULL;
+    return NULL;
 
   } else {
 
     #ifdef TX_DEBUG
     printf("One phase commit\n");
     #endif
+
     resp->data = new InbacRPCResp;
     resp->freedata = true;
     resp->data->status = respPrep->data->status;
@@ -1513,7 +1511,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     if (Timestamp::cmp(respPrep->data->mincommitts, resp->data->committs) > 0) {
       resp->data->committs = respPrep->data->mincommitts;
     }
-    resp->data->decision = vote;
+    resp->data->decision = respPrep->data->vote;
 
   }
 
@@ -1551,7 +1549,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
             d->data->inbacId, InbacData::toString(d->data->owners, d->data->size, d->data->vote));
         #endif
         resp->data->type = 1;
-        inbacData->deliver1(d->data->owners, d->data->size, d->data->vote, d->data->owner, d->data->all);
+        inbacData->deliver1(d->data->owners, d->data->size, d->data->vote, d->data->all);
         break;
 
       } case 2: {
