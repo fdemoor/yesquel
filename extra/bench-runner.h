@@ -1,7 +1,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
-  All rights reserved. 
+  All rights reserved.
 
   Written by Joshua B. Leners
 
@@ -51,6 +51,7 @@ enum Workload {
   WorkloadM,
   WorkloadN,
   WorkloadO,
+  WorkloadP,
   WorkloadW,
   RegressionTest,
   SimpleTest,

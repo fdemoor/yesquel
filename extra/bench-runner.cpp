@@ -992,6 +992,21 @@ static int do_workload_o(ClientPtr clp, ExperimentState& st, Parameters& param){
   return 0;
 }
 
+// long transactions (wait at beginning)
+static int do_workload_p(ClientPtr clp, ExperimentState& st, Parameters& param){
+  auto start = std::chrono::system_clock::now();
+  auto now = std::bind(std::chrono::system_clock::now);
+
+  struct timespec tim;
+  tim.tv_sec  = 0;
+  tim.tv_nsec = 2000000;
+  while (std::chrono::duration_cast<std::chrono::seconds>(now() - start).count() < param.duration){
+    nanosleep(&tim, NULL);
+    do_txn(st, clp, param);
+  }
+  return 0;
+}
+
 
 // wikipedia workload
 static int do_workload_w(ClientPtr clp, ExperimentState& st, Parameters& param){
@@ -1362,6 +1377,9 @@ Workload getWorkloadFromString(const std::string& desc){
     case 'o':
     case 'O':
       return WorkloadO;
+    case 'p':
+    case 'P':
+      return WorkloadP;
     case 'w':
     case 'W':
       return WorkloadW;
@@ -1474,6 +1492,10 @@ int RunWorkload(ClientPtr clp, Workload w, const Config* conf){
     return 0;
   case WorkloadO:
     do_workload_o(clp, st, p);
+    st.PrintTimes();
+    return 0;
+  case WorkloadP:
+    do_workload_p(clp, st, p);
     st.PrintTimes();
     return 0;
   case WorkloadW:
