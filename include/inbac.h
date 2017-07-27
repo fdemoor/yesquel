@@ -129,7 +129,7 @@ private:
   int addVote0(int owner, bool vote);
   void addVote1(int *owners, int size, bool vote);
 
-  void addAllVotes1ToVotes0() // Add all votes from collection1 to collection0
+  void addAllVotes1ToVotes0(); // Add all votes from collection1 to collection0
   bool checkAllExistVotes1(); // Check if received the vote of every node
 
   void consensusRescue1(); // Consensus rescue

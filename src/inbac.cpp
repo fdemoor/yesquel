@@ -536,7 +536,7 @@ void InbacData::consensusRescue2() {
 void InbacData::addAllVotes1ToVotes0() {
   for (int i = 0; i < NNodes; i++) {
     if (collection1.test(i)) {
-      addVote0(1, and1)
+      addVote0(1, and1);
     }
   }
 }
