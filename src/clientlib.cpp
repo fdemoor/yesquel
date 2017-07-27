@@ -7,6 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
+  Modified code: Copyright (c) 2017 LPD, EPFL
   All rights reserved.
 
   Written by Marcos K. Aguilera
@@ -832,21 +833,17 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
   struct timespec start, end;
   clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-#ifdef INBAC_PROTOCOL
+#ifdef INBAC_PROTOCOL // Use INBAC
   outcome = tryCommitINBAC(retcommitts);
   TransactionID::incr();
-  // printf("%s\n", "Using INBAC protocol");
-#else
+#else // Use 2PC
   outcome = tryCommit2PC(retcommitts);
-  // printf("%s\n", "Using 2PC protocol");
 #endif
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &end);
   uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
   Transaction::stat->add(Servers.getNitems(), (double) delta_us);
   Transaction::stat->print(1000);
-  // printf("Commit protocol took %lu µs\n", delta_us);
-  // fflush(stdout);
 
   return outcome;
 }
@@ -855,6 +852,8 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 
 u64 TransactionID::id = 0;
 
+// For debug, the parameter should be the max number of servers
+// but a wrong value will not lead to runtime errors
 TransactionStat* Transaction::stat = new TransactionStat(3);
 
 // static method
@@ -872,8 +871,8 @@ void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
     #ifdef TX_DEBUG
     printf("Signal semaphore %p\n", &(icd->sem)); fflush(stdout);
     #endif
-    icd->sem.signal();
-    icd->toSignal = false;
+    icd->sem.signal(); // Signal semaphore
+    icd->toSignal = false; // No need to signal when receiving another server reply
   }
   return; // free buffer
 }
@@ -906,6 +905,7 @@ int Transaction::auxinbac(Timestamp committs) {
   hascommitted = 0;
 #endif
 
+  // Get unique id for transaction
   u64 key = TransactionID::get(UniqueId::getUniqueId());
 
   icd = new InbacCallbackData;
@@ -951,6 +951,7 @@ int Transaction::auxinbac(Timestamp committs) {
   printf("Wait on semaphore %p\n", &(icd->sem)); fflush(stdout);
   #endif
 
+  // Wait for end of protocol
   icd->sem.wait(INFINITE);
   if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
                                                               // server
@@ -965,26 +966,6 @@ int Transaction::auxinbac(Timestamp committs) {
   #ifdef TX_DEBUG
   printf("Transaction done\n"); fflush(stdout);
   #endif
-
-  // for (icd = icdlist.getFirst(); icd != icdlist.getLast();
-  //      icd = icdlist.getNext(icd)){
-  //   #ifdef TX_DEBUG
-  //   printf("Waiting on semaphore %p\n", &(icd->sem)); fflush(stdout);
-  //   #endif
-  //   icd->sem.wait(INFINITE);
-  //   if (icd->data.status < 0) outcome = GAIAERR_SERVER_TIMEOUT; // error contacting
-  //                                                           // server
-  //   else {
-  //     outcome = icd->data.decision;
-  //     if ( !icd->data.committs.isIllegal() &&
-  //         Timestamp::cmp(icd->data.committs, committs) > 0){
-  //       committs = icd->data.committs; // update largest waitingts found
-  //     }
-  //   }
-  //   #ifdef TX_DEBUG
-  //   printf("Done !\n"); fflush(stdout);
-  //   #endif
-  // }
 
   return outcome;
 
@@ -1016,8 +997,6 @@ int Transaction::tryCommitINBAC(Timestamp *retcommitts) {
   if (outcome==0){
     if (retcommitts) *retcommitts = committs; // if requested, return commit
                                               // timestamp
-    // update lastcommitts
-    //if (lastcommitts < committs.getd1()) lastcommitts = committs.getd1();
   }
 
   State=-1;  // transaction now invalid

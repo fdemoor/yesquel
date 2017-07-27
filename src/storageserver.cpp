@@ -7,6 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
+  Modified code: Copyright (c) 2017 LPD, EPFL
   All rights reserved.
 
   Written by Marcos K. Aguilera
@@ -1471,17 +1472,20 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
   rpcdata->data->readset_len = d->data->readset_len;
   rpcdata->data->readset = d->data->readset;
 
+  // Prepare for transaction
   PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
 
   if (!rpcdata->data->onephasecommit) {
 
+    // Fill parameters for INBAC
     InbacDataParm *parm = new InbacDataParm;
     parm->parm = d->data;
     parm->ipport = S->ipport;
     parm->rpc = *(S->Rpcc);
     parm->k = d->data->inbacId;
-    parm->vote = respPrep->data->vote;
+    parm->vote = respPrep->data->vote; // Vote got at preparation
 
+    // Prepare commit data that will be used at the end of INBAC
     CommitRPCData *crpcdata = new CommitRPCData;
     crpcdata->data = new CommitRPCParm;
     crpcdata->freedata = true;
@@ -1494,6 +1498,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     parm->commitData = crpcdata;
     parm->rti = rti;
 
+    // Start INBAC
     startInbac((void*) parm);
 
     return NULL;
@@ -1504,6 +1509,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     printf("One phase commit\n");
     #endif
 
+    // One phase commit, fill response for client
     resp->data = new InbacRPCResp;
     resp->freedata = true;
     resp->data->status = respPrep->data->status;
@@ -1530,11 +1536,11 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
   printf("Deliver message of type %d\n", d->data->type); fflush(stdout);
   #endif
 
-  if (inbacData) {
+  if (inbacData) { // INBAC with this id is known
 
     switch (d->data->type) {
 
-      case 0: {
+      case 0: { // Vote delivery
         #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %lu - %s\n",
             d->data->inbacId, InbacData::toString(d->data->owner, d->data->vote));
@@ -1543,7 +1549,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         inbacData->deliver0(d->data->owner, d->data->vote);
         break;
 
-      } case 1: {
+      } case 1: { // Collection of votes delivery
         #ifdef TX_DEBUG
         printf("*** Deliver Event - Inbac Id = %lu - %s\n",
             d->data->inbacId, InbacData::toString(d->data->owners, d->data->size, d->data->vote));
@@ -1552,7 +1558,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         inbacData->deliver1(d->data->owners, d->data->size, d->data->vote, d->data->all);
         break;
 
-      } case 2: {
+      } case 2: { // Help request
         if (inbacData->getId() >= inbacData->getF()) {
           #ifdef TX_DEBUG
           printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->inbacId, "Help");
@@ -1570,12 +1576,12 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
       }
     }
 
-  } else {
+  } else { // INBAC with this id not known
 
     switch (d->data->type) {
       case 0:
       case 1: {
-        resp->data->type = 1;
+        resp->data->type = 1; // Store message in queue
         #ifdef TX_DEBUG
         printf("*** Msg stored in queue - Inbac Id = %lu - Type %d\n", d->data->inbacId, d->data->type);
         #endif
@@ -1588,7 +1594,7 @@ Marshallable *inbacMessageRpc(InbacMessageRPCData *d) {
         msg->size = d->data->size;
         InbacData::addMsgQueue(msg);
         break;
-      } case 2: {
+      } case 2: { // Send empty help
         resp->data->type = 0;
         resp->data->owners = new int[0];
         resp->data->size = 0;
@@ -1613,7 +1619,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
 
   switch (d->data->type) {
 
-    case 0: {
+    case 0: { // Vote request
       #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->consId, "Cons xact");
       #endif
@@ -1637,7 +1643,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
       resp->data->type = vote;
       break;
 
-    } case 1: {
+    } case 1: { // Commit message
       #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->consId, "Cons commit");
       #endif
@@ -1653,7 +1659,7 @@ Marshallable *consMessageRpc(ConsensusMessageRPCData *d) {
       resp->data->type = 2;
       break;
 
-    } case 2: {
+    } case 2: { // Abort message
       #ifdef TX_DEBUG
       printf("*** Deliver Event - Inbac Id = %lu - %s\n", d->data->consId, "Cons abort");
       #endif

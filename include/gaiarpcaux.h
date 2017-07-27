@@ -395,12 +395,12 @@ struct InbacRPCParm {
   Timestamp committs;    // commit timestamp
   int onephasecommit;     // whether to commit as well as prepare
                           // (used when transaction spans just one server)
-  u64 inbacId;
+  u64 inbacId;            // inbac id
 
   Set<IPPortServerno> *serverset; // set of storage servers
-  int rank;
-  IPPortServerno owner;
-  int nbServers;                  // number of storages servers
+  IPPortServerno owner; // server that will receive the message
+  int rank;     // index of owner among others in serverset
+  int nbServers;     // number of storages servers
 
   // stuff for piggyback write optimization (if GAIA_WRITE_ON_PREPARE enabled)
   Cid piggy_cid;          // piggyback container id
@@ -443,13 +443,13 @@ public:
 };
 
 struct InbacMessageRPCParm {
-  bool vote;
-  bool all;
-  int *owners;
-  int size;
-  int owner;
+  bool vote;  // Vote or and of votes
+  bool all; // Indicate if collection sent contains all expected votes (set only if type == 1)
+  int *owners;  // Collection of votes ie corresponding servers ranks (set only if type == 1)
+  int size; // Number of elements in owners (set only if type == 1)
+  int owner;  // Vote owner (set only if type == 0)
   int type;     // 0: vote, 1: set of votes, 2: help
-  u64 inbacId;
+  u64 inbacId;  // inbac id
   InbacMessageRPCParm *prev, *next;
 };
 
@@ -465,10 +465,10 @@ public:
 
 struct InbacMessageRPCResp {
   int type;           // 0: helped, -1:error, else: no callback needed
-  bool vote;
-  int *owners;
-  int size;
-  u64 inbacId;
+  bool vote;  // Vote or and of votes
+  int *owners; // Collection of votes ie corresponding servers ranks (set only if type == 0)
+  int size; // Number of elements in owners (set only if type == 0)
+  u64 inbacId; // inbac id
 };
 
 class InbacMessageRPCRespData : public Marshallable {
@@ -485,8 +485,8 @@ public:
 
 struct ConsensusMessageRPCParm {
   int type;     // 0: xact, 1: decision commit, 2: decision abort
-  u64 consId;
-  int phase;
+  u64 consId; // cons id (saùe as inbac id)
+  int phase;  // round number
 };
 
 class ConsensusMessageRPCData : public Marshallable {
@@ -500,8 +500,8 @@ public:
 };
 
 struct ConsensusMessageRPCResp {
-  int type;           // 0: no, 1: yes, 2: decision ack, -1:error, else: no callback needed;
-  u64 consId;
+  int type;    // 0: no, 1: yes, 2: decision ack, -1:error, else: no callback needed;
+  u64 consId;  // cons id (saùe as inbac id)
 };
 
 class ConsensusMessageRPCRespData : public Marshallable {

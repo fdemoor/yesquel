@@ -52,23 +52,26 @@
 
 class InbacData;
 
-int inbacTimeoutHandler(void* arg);
-int inbacTimeoutHandler(InbacData* data, bool type);
+// Timeout functions
+int inbacTimeoutHandler(void* arg); // if used with scheduler event
+int inbacTimeoutHandler(InbacData* data, bool type); // if directly called
 
+// Callback
 struct InbacMessageCallbackData {
   InbacMessageRPCResp data;
   InbacMessageCallbackData *prev, *next; // linklist stuff
 };
 void inbacmessagecallback(char *data, int len, void *callbackdata);
 
+// Parameter structure for initialisation
 struct InbacDataParm {
-  InbacRPCParm *parm;
-  IPPort ipport;
-  Ptr<RPCTcp> rpc;
-  u64 k;
-  int vote;
-  CommitRPCData *commitData;
-  RPCTaskInfo *rti;
+  InbacRPCParm *parm; // original message from client
+  IPPort ipport; // server receiving message
+  Ptr<RPCTcp> rpc; // RPC pointer
+  u64 k; // inbac id
+  int vote; // vote to propose
+  CommitRPCData *commitData; // commit data to use once decided
+  RPCTaskInfo *rti; // task to end once decided (to send reply back to client)
 };
 
 class InbacData {
@@ -82,13 +85,13 @@ private:
   CommitRPCData *crpcdata;
   RPCTaskInfo *rti;
 
-  int maxNbCrashed;
-  int NNodes;
+  int maxNbCrashed; // Max number of allowed crashes
+  int NNodes; // Number of involved nodes in transaction
 
-  bool t0;
-  bool t1;
-  bool d0;
-  bool d1;
+  bool t0; // timeout0 was done
+  bool t1; // timeout1 was done
+  bool d0; // used for deletion, in case of multiple timeout0 set
+  bool d1; // used for deletion, in case of multiple timeout1 set
 
   int phase;
   bool proposed;
@@ -99,6 +102,7 @@ private:
   bool and0;
   int *votes0;
 
+  boost::dynamic_bitset<> collection1;
   bool and1;
   bool all1;
 
@@ -113,22 +117,25 @@ private:
   int cnt;
   int cntHelp;
 
+  // Hash table to store inbac data objects with their id
   static HashTable<u64,InbacData> *inbacDataObjects;
 
+  // Message queue for messages with no corresponding inbac data
   static LinkList<InbacMessageRPCParm> *msgQueue;
 
-  void timeoutEvent0();
-  void timeoutEvent1();
+  void timeoutEvent0(); // Firt timeout
+  void timeoutEvent1(); // Second timeout
 
   int addVote0(int owner, bool vote);
   void addVote1(int *owners, int size, bool vote);
 
-  bool checkAllExistVotes1();
+  void addAllVotes1ToVotes0() // Add all votes from collection1 to collection0
+  bool checkAllExistVotes1(); // Check if received the vote of every node
 
-  void consensusRescue1();
-  void consensusRescue2();
+  void consensusRescue1(); // Consensus rescue
+  void consensusRescue2(); // Consensus rescue with help
 
-  bool checkHelpVotes();
+  bool checkHelpVotes(); // Check if received all votes with help request
 
   void tryDelete();
 

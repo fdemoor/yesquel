@@ -7,6 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
+  Modified code: Copyright (c) 2017 LPD, EPFL
   All rights reserved.
 
   Written by Marcos K. Aguilera
@@ -74,18 +75,21 @@
 StorageConfig *InitGaia(void);
 void UninitGaia(StorageConfig *SC);
 
+// Get a unique id for INBAC protocol
 class TransactionID {
 private:
-  static u64 id;
+  static u64 id; // Local transaction index
 public:
   static void incr() { id++; }
-  static u64 get(u64 key) {
+  static u64 get(u64 key) { // Bijection from N^2 (key and id) and N
     u64 x = key + id;
     return (x * x + 3 * key + id) / 2;
   }
   static u64 get() { return id; };
 };
 
+// Basic stat class to log the number of transactions, the durations, and the
+// average duration per transaction, grouped by number of servers involved
 class TransactionStat {
 private:
   int* headcounts;
@@ -108,9 +112,11 @@ public:
     delete[] durations;
   }
   void add(int n, double t) {
-    total++;
-    headcounts[n-1]++;
-    durations[n-1] += t;
+    if (n <= size) {
+      total++;
+      headcounts[n-1]++;
+      durations[n-1] += t;
+    }
   }
   void print(int k) {
     if ((total % k) == 0) {

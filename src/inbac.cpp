@@ -125,6 +125,7 @@ void InbacData::deliver0(int owner, bool vote) {
       InbacData::nbSpeedUp0++;
       #endif
 
+      // No need to wait for timeout, shortcut
       d0 = false;
       inbacTimeoutHandler(this, false);
     }
@@ -141,6 +142,7 @@ void InbacData::deliver1(int *owners, int size, bool vote, bool all) {
     InbacData::nbSpeedUp1++;
     #endif
 
+    // No need to wait for timeout, shortcut
     d1 = false;
     inbacTimeoutHandler(this, true);
   }
@@ -158,7 +160,7 @@ int InbacData::addVote0(int owner, bool vote) {
 
 void InbacData::addVote1(int *owners, int size, bool vote) {
   for (int i = 0; i < size; i++) {
-    addVote0(owners[i], vote);
+    collection1.set(owners[i], true);
   }
   and1 = and1 && vote;
 }
@@ -206,6 +208,7 @@ InbacData::InbacData(InbacDataParm *parm) {
   size0 = 0;
   votes0 = new int[NNodes];
   and0 = true;
+  collection1 = boost::dynamic_bitset<>(NNodes);
   and1 = true;
   all1 = true;
   collectionHelp = boost::dynamic_bitset<>(NNodes);
@@ -274,7 +277,7 @@ void InbacData::propose(int vote) {
     phase = 1;
   }
 
-  // Look for messages already received
+  // Look for messages already received with no corresponding inbac data
   InbacMessageRPCParm *msgIt;
   InbacMessageRPCParm *msg;
   bool found = false;
@@ -331,6 +334,8 @@ void InbacData::timeoutEvent(bool type) {
 }
 
 void InbacData::timeoutEvent0() {
+
+  // Sends back collection of votes
 
   if (phase == 0) {
 
@@ -437,12 +442,14 @@ void InbacData::timeoutEvent1() {
     } else {
 
       addVote0(id, val);
+      addAllVotes1ToVotes0();
       if (cnt == maxNbCrashed && all1) {
         decision = and1;
         decide(decision);
       } else if (cnt >= 1) {
         consensusRescue1();
       } else {
+        // Ask for help
         wait = true;
         SetNode<IPPortServerno> *it;
         int i = 0;
@@ -526,7 +533,16 @@ void InbacData::consensusRescue2() {
   consData->propose(proposal);
 }
 
+void InbacData::addAllVotes1ToVotes0() {
+  for (int i = 0; i < NNodes; i++) {
+    if (collection1.test(i)) {
+      addVote0(1, and1)
+    }
+  }
+}
+
 bool InbacData::checkAllExistVotes1() {
+  addAllVotes1ToVotes0();
   return (size0 == NNodes);
 }
 
@@ -552,6 +568,7 @@ void InbacData::decide(bool d) {
 
     decided = true;
     crpcdata->data->commit = d ? 0 : 1;
+    // Commit transaction
     CommitRPCRespData *respCom = (CommitRPCRespData*) commitRpc(crpcdata);
 
     InbacRPCRespData *resp = new InbacRPCRespData;
@@ -562,7 +579,7 @@ void InbacData::decide(bool d) {
     resp->data->committs = respCom->data->waitingts;
     rti->setResp(resp);
     TaskScheduler *ts = tgetTaskScheduler();
-    ts->endTask(rti);
+    ts->endTask(rti); // End task to send back response to client
 
     tryDelete();
 

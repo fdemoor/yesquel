@@ -8,6 +8,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
+  Modified code: Copyright (c) 2017 LPD, EPFL
   All rights reserved.
 
   Written by Marcos K. Aguilera
@@ -246,7 +247,7 @@ int inbacRpcStub(RPCTaskInfo *rti){;
     Marshallable *resp;
     d.demarshall(rti->data);
     resp = inbacRpc(&d, rti->State, (void*) rti);
-    if (resp) {
+    if (resp) { // One phase commit
       rti->setResp(resp);
       return SchedulerTaskStateEnding;
     }

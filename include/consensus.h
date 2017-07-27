@@ -47,8 +47,10 @@
 #include "grpctcp.h"
 #include "inbac.h"
 
+// Timeout function
 int consensusTimeoutHandler(void* arg);
 
+// Callback
 struct ConsensusMessageCallbackData {
   ConsensusMessageRPCResp data;
   ConsensusMessageCallbackData *prev, *next; // linklist stuff
@@ -77,7 +79,7 @@ private:
   int decisionAcks;
   bool voted;
 
-  bool r;
+  bool r; // Boolean to discard some timeouts
 
   static HashTable<u64,ConsensusData> *consDataObjects;
 

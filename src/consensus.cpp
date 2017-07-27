@@ -45,18 +45,18 @@ void consmessagecallback(char *data, int len, void *callbackdata) {
     rpcresp.demarshall(data);
     pcd->data = *rpcresp.data;
     int type = pcd->data.type;
-    if (type == 0 ||type == 1) {
+    if (type == 0 ||type == 1) { // Reply to vote request
       #ifdef TX_DEBUG
       printf("*** Deliver Event - Consensus Id = %lu - %s\n", pcd->data.consId, type == 0 ? "No" : "Yes");
       #endif
-      if (type == 1) {
+      if (type == 1) { // Positive reply
         ConsensusData *consData = ConsensusData::getConsensusData(pcd->data.consId);
         if (consData) {
           consData->addAck();
           if (consData->enoughAcks()) { consData->lead(); }
         }
       }
-    } else if (type == 2) {
+    } else if (type == 2) { // Ack
       ConsensusData *consData = ConsensusData::getConsensusData(pcd->data.consId);
       if (consData) {
         consData->addDecisionAck();
@@ -73,6 +73,7 @@ void consmessagecallback(char *data, int len, void *callbackdata) {
 
 
 int consTimeoutHandler(void* arg) {
+  // Random timeout
   int delay = rand() % CONS_DELAY;
   struct timespec tim;
   tim.tv_sec  = 0;
@@ -89,6 +90,7 @@ int consDeleteHandler(void* arg) {
   return 0;
 }
 
+// Hash table to store consensus date with id
 HashTable<u64,ConsensusData>* ConsensusData::consDataObjects = new HashTable<u64,ConsensusData>(100);
 
 ConsensusData* ConsensusData::getConsensusData(u64 key) {
@@ -155,6 +157,7 @@ void ConsensusData::timeoutEvent() {
 
       SetNode<IPPortServerno> *it;
 
+      // Ask for vote
       for (it = serverset->getFirst(); it != serverset->getLast();
            it = serverset->getNext(it)) {
         if (IPPortServerno::cmp(it->key, server) != 0) {
@@ -189,6 +192,7 @@ void ConsensusData::lead() {
 
     SetNode<IPPortServerno> *it;
 
+    // Send decision
     for (it = serverset->getFirst(); it != serverset->getLast();
          it = serverset->getNext(it)) {
       if (IPPortServerno::cmp(it->key, server) != 0) {

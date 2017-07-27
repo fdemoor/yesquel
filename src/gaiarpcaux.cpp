@@ -7,6 +7,7 @@
 /*
   Original code: Copyright (c) 2014 Microsoft Corporation
   Modified code: Copyright (c) 2015-2016 VMware, Inc
+  Modified code: Copyright (c) 2017 LPD, EPFL
   All rights reserved.
 
   Written by Marcos K. Aguilera
