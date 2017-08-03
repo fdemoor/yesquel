@@ -318,6 +318,9 @@ void InbacData::propose(int vote) {
 void InbacData::tryDelete() {
   if (d0 && d1 && decided) {
     removeInbacData(this);
+    collection0.reset();
+    collection1.reset();
+    collectionHelp.reset();
     delete this;
   }
 }
