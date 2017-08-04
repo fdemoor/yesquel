@@ -153,8 +153,8 @@ int InbacData::addVote0(int owner, bool vote) {
     collection0.set(owner, true);
     votes0[size0] = owner;
     size0++;
+    and0 = and0 && vote;
   }
-  and0 = and0 && vote;
   return size0;
 }
 
@@ -204,14 +204,14 @@ InbacData::InbacData(InbacDataParm *parm) {
   phase = 0;
   proposed = false;
   decided = false;
-  collection0 = boost::dynamic_bitset<>(NNodes);
+  collection0.resize(NNodes);
   size0 = 0;
   votes0 = new int[NNodes];
   and0 = true;
-  collection1 = boost::dynamic_bitset<>(NNodes);
+  collection1.resize(NNodes);
   and1 = true;
   all1 = true;
-  collectionHelp = boost::dynamic_bitset<>(NNodes);
+  collectionHelp.resize(NNodes);
   sizeHelp = 0;
   andHelp = true;
   wait = false;
@@ -539,7 +539,7 @@ void InbacData::consensusRescue2() {
 void InbacData::addAllVotes1ToVotes0() {
   for (int i = 0; i < NNodes; i++) {
     if (collection1.test(i)) {
-      addVote0(1, and1);
+      addVote0(i, and1);
     }
   }
 }
