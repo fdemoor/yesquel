@@ -146,39 +146,46 @@ void ConsensusData::propose(bool v) {
 void ConsensusData::timeoutEvent() {
   if (r) {
     if (!done) {
-      phase++;
-      voted = false;
-      nbAcks = 0;
-      tryingLead = true;
+      
+      if (phase < 1000) {
+        phase++;
+        voted = false;
+        nbAcks = 0;
+        tryingLead = true;
 
-      #ifdef TX_DEBUG
-      printf("*** Timeout Event - Inbac ID = %lu - Consensus Round = %d\n", consId, phase);
-      #endif
+        #ifdef TX_DEBUG
+        printf("*** Timeout Event - Inbac ID = %lu - Consensus Round = %d\n", consId, phase);
+        #endif
 
-      SetNode<IPPortServerno> *it;
+        SetNode<IPPortServerno> *it;
 
-      // Ask for vote
-      for (it = serverset->getFirst(); it != serverset->getLast();
-           it = serverset->getNext(it)) {
-        if (IPPortServerno::cmp(it->key, server) != 0) {
+        // Ask for vote
+        for (it = serverset->getFirst(); it != serverset->getLast();
+             it = serverset->getNext(it)) {
+          if (IPPortServerno::cmp(it->key, server) != 0) {
 
-          ConsensusMessageRPCData *rpcdata = new ConsensusMessageRPCData;
-          rpcdata->data = new ConsensusMessageRPCParm;
-          rpcdata->data->type = 0;
-          rpcdata->data->consId = consId;
-          rpcdata->data->phase = phase;
-          ConsensusMessageCallbackData *imcd = new ConsensusMessageCallbackData;
+            ConsensusMessageRPCData *rpcdata = new ConsensusMessageRPCData;
+            rpcdata->data = new ConsensusMessageRPCParm;
+            rpcdata->data->type = 0;
+            rpcdata->data->consId = consId;
+            rpcdata->data->phase = phase;
+            ConsensusMessageCallbackData *imcd = new ConsensusMessageCallbackData;
 
-          #ifdef TX_DEBUG
-          printf("Asking election vote to %u:%u in consensus\n",
-              it->key.ipport.ip, it->key.ipport.port);
-          #endif
-          Rpcc->asyncRPC(it->key.ipport, CONSMESSAGE_RPCNO, 0, rpcdata,
-                          consmessagecallback, imcd);
+            #ifdef TX_DEBUG
+            printf("Asking election vote to %u:%u in consensus\n",
+                it->key.ipport.ip, it->key.ipport.port);
+            #endif
+            Rpcc->asyncRPC(it->key.ipport, CONSMESSAGE_RPCNO, 0, rpcdata,
+                            consmessagecallback, imcd);
 
+          }
         }
+        setTimeout();
+        
+      } else {
+        vote = false;
+        lead();
       }
-      setTimeout();
     }
   } else {
     r = true;
