@@ -56,7 +56,7 @@ void inbacmessagecallback(char *data, int len, void *callbackdata) {
       #endif
 
       InbacData *inbacData = InbacData::getInbacData(pcd->data.inbacId);
-      inbacData->deliverHelp(pcd->data.owners, pcd->data.size, pcd->data.vote);
+      if (inbacData) { inbacData->deliverHelp(pcd->data.owners, pcd->data.size, pcd->data.vote); }
     }
 
   } else {
