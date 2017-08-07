@@ -80,14 +80,7 @@ int inbacTimeoutHandler(void* arg) {
 }
 
 int inbacTimeoutHandler(InbacData* data, bool type) {
-  if (data) {
-
-    #ifdef TX_DEBUG
-    printf("Timeout Event - Inbac Id = %lu\n", timeoutData->data->GetKey());
-    #endif
-
-    data->timeoutEvent(type);
-  }
+  if (data) { data->timeoutEvent(type); }
   return 0;
 }
 
