@@ -112,7 +112,7 @@ public:
     delete[] durations;
   }
   void add(int n, double t) {
-    if (n <= size) {
+    if (n < size) {
       total++;
       headcounts[n-1]++;
       durations[n-1] += t;

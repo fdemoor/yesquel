@@ -1450,6 +1450,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   RPCTaskInfo *rti = (RPCTaskInfo*) rpctasknotify;
 
+  int vote;
   InbacRPCRespData *resp = new InbacRPCRespData;
   assert(S); // if this assert fails, forgot to call initStorageServer()
   dshowchar('i');
@@ -1474,6 +1475,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
 
   // Prepare for transaction
   PrepareRPCRespData *respPrep = (PrepareRPCRespData*) prepareRpc(rpcdata, state, rpctasknotify);
+  vote = respPrep->data->vote;
 
   if (!rpcdata->data->onephasecommit) {
 
@@ -1483,7 +1485,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     parm->ipport = S->ipport;
     parm->rpc = *(S->Rpcc);
     parm->k = d->data->inbacId;
-    parm->vote = respPrep->data->vote; // Vote got at preparation
+    parm->vote = vote; // Vote got at preparation
 
     // Prepare commit data that will be used at the end of INBAC
     CommitRPCData *crpcdata = new CommitRPCData;
@@ -1501,7 +1503,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     // Start INBAC
     startInbac((void*) parm);
 
-    return NULL;
+    resp = NULL;
 
   } else {
 
@@ -1517,7 +1519,7 @@ Marshallable *inbacRpc(InbacRPCData *d, void *&state, void *rpctasknotify) {
     if (Timestamp::cmp(respPrep->data->mincommitts, resp->data->committs) > 0) {
       resp->data->committs = respPrep->data->mincommitts;
     }
-    resp->data->decision = respPrep->data->vote;
+    resp->data->decision = vote;
 
   }
 

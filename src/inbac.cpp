@@ -79,11 +79,6 @@ int inbacTimeoutHandler(void* arg) {
   return 0;
 }
 
-int inbacTimeoutHandler(InbacData* data, bool type) {
-  if (data) { data->timeoutEvent(type); }
-  return 0;
-}
-
 HashTable<u64,InbacData>* InbacData::inbacDataObjects = new HashTable<u64,InbacData>(10000);
 LinkList<InbacMessageRPCParm>* InbacData::msgQueue = new LinkList<InbacMessageRPCParm>(true);
 
@@ -120,7 +115,10 @@ void InbacData::deliver0(int owner, bool vote) {
 
       // No need to wait for timeout, shortcut
       d0 = false;
-      inbacTimeoutHandler(this, false);
+      InbacTimeoutData *timeoutData = new InbacTimeoutData;
+      timeoutData->data = this;
+      timeoutData->type = false;
+      TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, 0);
     }
   }
 }
@@ -137,7 +135,10 @@ void InbacData::deliver1(int *owners, int size, bool vote, bool all) {
 
     // No need to wait for timeout, shortcut
     d1 = false;
-    inbacTimeoutHandler(this, true);
+    InbacTimeoutData *timeoutData = new InbacTimeoutData;
+    timeoutData->data = this;
+    timeoutData->type = true;
+    TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, 0);
   }
 }
 
@@ -262,7 +263,7 @@ void InbacData::propose(int vote) {
   // Set timer
   InbacTimeoutData *timeoutData = new InbacTimeoutData;
   timeoutData->data = this;
-  timeoutData->type = 0;
+  timeoutData->type = false;
   if (id <= maxNbCrashed) {
     TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, MSG_DELAY);
   } else {
@@ -411,7 +412,7 @@ void InbacData::timeoutEvent0() {
     phase = 1;
     InbacTimeoutData *timeoutData = new InbacTimeoutData;
     timeoutData->data = this;
-    timeoutData->type = 1;
+    timeoutData->type = true;
     TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, MSG_DELAY);
   }
 }

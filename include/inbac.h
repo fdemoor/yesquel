@@ -53,8 +53,7 @@
 class InbacData;
 
 // Timeout functions
-int inbacTimeoutHandler(void* arg); // if used with scheduler event
-int inbacTimeoutHandler(InbacData* data, bool type); // if directly called
+int inbacTimeoutHandler(void* arg);
 
 // Callback
 struct InbacMessageCallbackData {

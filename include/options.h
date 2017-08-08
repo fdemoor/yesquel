@@ -320,5 +320,5 @@
 // /!\ if used, all storage servers have the same seed
 
 // #define TX_DEBUG
-// #define TX_DEBUG_2
+#define TX_DEBUG_2
 // Sets printing for INBAC debug
