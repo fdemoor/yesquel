@@ -314,6 +314,8 @@
 
 #define MAX_NB_CRASHED 1
 // Sets the max number of allowed crashes, used for INBAC protocol
+// /!\ WARNING: MAX_NB_CRASHED > 1 has not been tested yet: it may
+// /!\ not work and need some debug
 
 //#define CONS_PRNG_SEED 15844842
 // Sets the seed used to initiliaze PRNG in Consensus module for INBAC

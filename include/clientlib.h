@@ -96,10 +96,12 @@ private:
   double* durations;
   int size;
   int total;
+  int cmt;
 public:
   TransactionStat(int n) {
     total = 0;
     size = n;
+    cmt = 0;
     headcounts = new int[size];
     durations = new double[size];
     for (int i = 0; i < size; i++) {
@@ -111,17 +113,18 @@ public:
     delete[] headcounts;
     delete[] durations;
   }
-  void add(int n, double t) {
+  void add(int n, double t, bool outcome) {
     if (n < size) {
       total++;
       headcounts[n-1]++;
       durations[n-1] += t;
+      if (outcome) { cmt++; }
     }
   }
   void print(int k) {
     if ((total % k) == 0) {
       FILE *fp =  fopen("transanctionStat.log", "w");
-      fprintf(fp, "Transactions: ");
+      fprintf(fp, "Transactions: %d commits / %d - ", cmt, total);
       for (int i = 0; i < size; i++) {
         fprintf(fp, "%d (%d, %g, %g) ", i+1, headcounts[i], durations[i], durations[i] / headcounts[i]);
       }

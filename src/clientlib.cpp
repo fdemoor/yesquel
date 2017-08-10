@@ -842,7 +842,7 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &end);
   uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-  Transaction::stat->add(Servers.getNitems(), (double) delta_us);
+  Transaction::stat->add(Servers.getNitems(), (double) delta_us, outcome == 0 ? true : false);
   Transaction::stat->print(1000);
 
   return outcome;
@@ -854,7 +854,7 @@ u64 TransactionID::id = 0;
 
 // For debug, the parameter should be the max number of servers
 // but a wrong value will not lead to runtime errors
-TransactionStat* Transaction::stat = new TransactionStat(3);
+TransactionStat* Transaction::stat = new TransactionStat(32);
 
 // static method
 void Transaction::auxinbaccallback(char *data, int len, void *callbackdata){
