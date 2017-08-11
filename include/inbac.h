@@ -116,6 +116,8 @@ private:
   int cnt;
   int cntHelp;
 
+  bool ff; // if true: failure-free execution
+
   // Hash table to store inbac data objects with their id
   static HashTable<u64,InbacData> *inbacDataObjects;
 

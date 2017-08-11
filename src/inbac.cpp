@@ -212,6 +212,8 @@ InbacData::InbacData(InbacDataParm *parm) {
   cnt = 0;
   cntHelp = 0;
 
+  ff = true;
+
   insertInbacData(this);
 
 }
@@ -433,6 +435,7 @@ void InbacData::timeoutEvent1() {
         decision = and1;
         decide(decision);
       } else {
+        ff = false;
         consensusRescue1();
       }
 
@@ -443,43 +446,47 @@ void InbacData::timeoutEvent1() {
       if (cnt == maxNbCrashed && all1) {
         decision = and1;
         decide(decision);
-      } else if (cnt >= 1) {
-        consensusRescue1();
       } else {
-        // Ask for help
-        wait = true;
-        SetNode<IPPortServerno> *it;
-        int i = 0;
+        ff = false;
+        if (cnt >= 1) {
+          ff = false;
+          consensusRescue1();
+        } else {
+          // Ask for help
+          wait = true;
+          SetNode<IPPortServerno> *it;
+          int i = 0;
 
-        for (it = serverset->getFirst(); it != serverset->getLast();
-             it = serverset->getNext(it)) {
+          for (it = serverset->getFirst(); it != serverset->getLast();
+               it = serverset->getNext(it)) {
 
-          if (i >= maxNbCrashed && IPPortServerno::cmp(it->key, server) != 0) {
+            if (i >= maxNbCrashed && IPPortServerno::cmp(it->key, server) != 0) {
 
-            #ifdef TX_DEBUG
-            printf("Sending Help request to %u:%u\n", it->key.ipport.ip, it->key.ipport.port); fflush(stdout);
-            #endif
+              #ifdef TX_DEBUG
+              printf("Sending Help request to %u:%u\n", it->key.ipport.ip, it->key.ipport.port); fflush(stdout);
+              #endif
 
-            InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
-            rpcdata->data = new InbacMessageRPCParm;
-            rpcdata->data->type = 2;
-            rpcdata->data->inbacId = inbacId;
-            InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
+              InbacMessageRPCData *rpcdata = new InbacMessageRPCData;
+              rpcdata->data = new InbacMessageRPCParm;
+              rpcdata->data->type = 2;
+              rpcdata->data->inbacId = inbacId;
+              InbacMessageCallbackData *imcd = new InbacMessageCallbackData;
 
-            Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
-                            inbacmessagecallback, imcd);
+              Rpcc->asyncRPC(it->key.ipport, INBACMESSAGE_RPCNO, 0, rpcdata,
+                              inbacmessagecallback, imcd);
+            }
+            i++;
           }
-          i++;
+
+          if (id == maxNbCrashed) { cntHelp++; }
+
+          #ifdef TX_DEBUG
+          printf("Waiting for help\n"); fflush(stdout);
+          #endif
+
+          timeoutEventHelp();
+
         }
-
-        if (id == maxNbCrashed) { cntHelp++; }
-
-        #ifdef TX_DEBUG
-        printf("Waiting for help\n"); fflush(stdout);
-        #endif
-
-        timeoutEventHelp();
-
       }
     }
 
@@ -572,7 +579,11 @@ void InbacData::decide(bool d) {
     resp->data = new InbacRPCResp;
     resp->freedata = true;
     resp->data->status = respCom->data->status;
-    resp->data->decision = crpcdata->data->commit;
+    if (ff) {
+      resp->data->decision = d ? 0 : 1;
+    } else {
+      resp->data->decision = d ? 2 : 3;
+    }
     resp->data->committs = respCom->data->waitingts;
     rti->setResp(resp);
     TaskScheduler *ts = tgetTaskScheduler();

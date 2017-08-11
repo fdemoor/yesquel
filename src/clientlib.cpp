@@ -829,6 +829,7 @@ int Transaction::releaseSubtrans(int level){
 
 int Transaction::tryCommit(Timestamp *retcommitts) {
   int outcome;
+  bool ff = true;
 
   struct timespec start, end;
   clock_gettime(CLOCK_MONOTONIC_RAW, &start);
@@ -838,11 +839,13 @@ int Transaction::tryCommit(Timestamp *retcommitts) {
   TransactionID::incr();
 #else // Use 2PC
   outcome = tryCommit2PC(retcommitts);
+  if (outcome == 2) { outcome = 0; ff = false; }
+  if (outcome == 3) { outcome = 1; ff = false; }
 #endif
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &end);
   uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-  Transaction::stat->add(Servers.getNitems(), (double) delta_us, outcome == 0 ? true : false);
+  Transaction::stat->add(Servers.getNitems(), (double) delta_us, outcome == 0 ? true : false, ff);
   Transaction::stat->print(1000);
 
   return outcome;

@@ -96,10 +96,13 @@ private:
   double* durations;
   int size;
   int total;
+  int ttff; // Number of failure-free executions
   int cmt;
+  int cmtff; // Number of commits during failure-free executions
 public:
   TransactionStat(int n) {
     total = 0;
+    ttff = 0;
     size = n;
     cmt = 0;
     headcounts = new int[size];
@@ -113,18 +116,22 @@ public:
     delete[] headcounts;
     delete[] durations;
   }
-  void add(int n, double t, bool outcome) {
+  void add(int n, double t, bool outcome, bool ff) {
     if (n < size) {
       total++;
       headcounts[n-1]++;
       durations[n-1] += t;
       if (outcome) { cmt++; }
+      if (ff) {
+        ttff++;
+        cmtff++;
+      }
     }
   }
   void print(int k) {
     if ((total % k) == 0) {
       FILE *fp =  fopen("transanctionStat.log", "w");
-      fprintf(fp, "Transactions: %d commits / %d - ", cmt, total);
+      fprintf(fp, "Transactions: %d commits / %d - %d commits / %d ff - ", cmt, total, cmtff, ttff);
       for (int i = 0; i < size; i++) {
         fprintf(fp, "%d (%d, %g, %g) ", i+1, headcounts[i], durations[i], durations[i] / headcounts[i]);
       }
