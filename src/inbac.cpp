@@ -262,17 +262,6 @@ void InbacData::propose(int vote) {
     }
   }
 
-  // Set timer
-  InbacTimeoutData *timeoutData = new InbacTimeoutData;
-  timeoutData->data = this;
-  timeoutData->type = false;
-  if (id <= maxNbCrashed) {
-    TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, MSG_DELAY);
-  } else {
-    TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, 2 * MSG_DELAY);
-    phase = 1;
-  }
-
   // Look for messages already received with no corresponding inbac data
   InbacMessageRPCParm *msgIt;
   InbacMessageRPCParm *msg;
@@ -307,6 +296,17 @@ void InbacData::propose(int vote) {
       delete msg;
       found = false;
     }
+  }
+  
+  // Set timer
+  InbacTimeoutData *timeoutData = new InbacTimeoutData;
+  timeoutData->data = this;
+  timeoutData->type = false;
+  if (id <= maxNbCrashed) {
+    TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, MSG_DELAY);
+  } else {
+    TaskEventScheduler::AddEvent(tgetThreadNo(), inbacTimeoutHandler, (void*) timeoutData, 0, 2 * MSG_DELAY);
+    phase = 1;
   }
 
 }
